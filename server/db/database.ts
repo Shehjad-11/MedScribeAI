@@ -250,11 +250,11 @@ export function saveClinicalCase(db: Database.Database, clinicalCase: ClinicalCa
         clinicalCase.id,
         field,
         JSON.stringify(fact.value),
-        fact.provenance.source,
-        fact.provenance.method,
-        fact.provenance.confidence ?? 1.0,
-        fact.provenance.verificationState,
-        fact.provenance.timestamp || now
+        fact.provenance?.source || 'PATIENT_REPORTED',
+        fact.provenance?.method || 'touch',
+        fact.provenance?.confidence ?? 1.0,
+        fact.provenance?.verificationState || 'unverified',
+        fact.provenance?.timestamp || now
       );
     }
   }
@@ -266,13 +266,14 @@ export function saveClinicalCase(db: Database.Database, clinicalCase: ClinicalCa
       clinicalCase.id,
       `question.${qKey}`,
       JSON.stringify(qFact.value),
-      qFact.provenance.source,
-      qFact.provenance.method,
-      qFact.provenance.confidence ?? 1.0,
-      qFact.provenance.verificationState,
-      qFact.provenance.timestamp || now
+      qFact.provenance?.source || 'PATIENT_REPORTED',
+      qFact.provenance?.method || 'touch',
+      qFact.provenance?.confidence ?? 1.0,
+      qFact.provenance?.verificationState || 'unverified',
+      qFact.provenance?.timestamp || now
     );
   }
+
 
   // 4. Sync red flag alerts
   const deleteAlerts = db.prepare(`DELETE FROM safety_alerts WHERE case_id = ?`);
@@ -390,3 +391,55 @@ export function getAuditEvents(
   const stmt = db.prepare(query);
   return stmt.all(...params) as DbAuditEvent[];
 }
+
+/* =========================================================================
+   5. DOCUMENTS REPOSITORY (ENCRYPTION-AT-REST CAPABLE)
+   ========================================================================= */
+
+export interface DbDocument {
+  id: string;
+  case_id: string;
+  document_type: 'prescription' | 'lab_report';
+  file_name: string;
+  ocr_raw_text?: string | null;
+  extracted_data_json?: string | null;
+  created_at: string;
+}
+
+export function saveDocumentRecord(
+  db: Database.Database,
+  doc: {
+    id: string;
+    caseId: string;
+    documentType: 'prescription' | 'lab_report';
+    fileName: string;
+    ocrRawText?: string | null;
+    extractedData?: any;
+  }
+): void {
+  const stmt = db.prepare(`
+    INSERT INTO documents (id, case_id, document_type, file_name, ocr_raw_text, extracted_data_json, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      document_type = excluded.document_type,
+      file_name = excluded.file_name,
+      ocr_raw_text = excluded.ocr_raw_text,
+      extracted_data_json = excluded.extracted_data_json
+  `);
+
+  stmt.run(
+    doc.id,
+    doc.caseId,
+    doc.documentType,
+    doc.fileName,
+    doc.ocrRawText || null,
+    doc.extractedData ? (typeof doc.extractedData === 'string' ? doc.extractedData : JSON.stringify(doc.extractedData)) : null,
+    new Date().toISOString()
+  );
+}
+
+export function getDocumentsForCase(db: Database.Database, caseId: string): DbDocument[] {
+  const stmt = db.prepare(`SELECT * FROM documents WHERE case_id = ? ORDER BY created_at ASC`);
+  return stmt.all(caseId) as DbDocument[];
+}
+

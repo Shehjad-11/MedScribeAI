@@ -665,3 +665,36 @@ pm run lint (	sc --noEmit): **0 errors**.
    - Post-change test count: **150 passing across 18 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 11: Security Hardening, Encryption-at-Rest & Authorization Matrix
+
+### Summary of Implementation & Verification
+1. **Authenticated Encryption at Rest (`server/security/encryption.ts`)**:
+   - Implemented AES-256-GCM encryption for stored clinical documents and sensitive extracted payloads with random 12-byte IVs and 16-byte authentication tags.
+   - Key derivation using `scrypt` from `process.env.DOC_ENCRYPTION_KEY` with dedicated salt.
+   - Encrypted payload format: `enc:v1:<iv>:<tag>:<ciphertext>`.
+   - Tamper-proofing: decryption strictly verifies GCM authentication tags; any bit alteration causes immediate failure.
+2. **File Upload Security & Temp-File Cleanup (`server/security/fileUploadSecurity.ts`)**:
+   - Upload validation: MIME whitelist (`image/jpeg`, `image/png`, `image/webp`, `application/pdf`), 10 MB file cap, path-traversal filename sanitization.
+   - Binary magic-byte header inspection (PNG `89 50 4E 47`, JPEG `FF D8 FF`, PDF `%PDF-`, WEBP `RIFF...WEBP`) preventing disguised executable uploads.
+   - Isolated scratch directory management (`scratch/temp_uploads`) with restricted file modes (`0600`), immediate post-processing cleanup handles, and orphaned temp file sweeping.
+3. **In-Memory Rate Limiting (`server/security/rateLimiter.ts`)**:
+   - Built sliding-window rate limiter middleware for kiosk routes (60 req/min threshold).
+   - Returns HTTP 429 Too Many Requests with standard `Retry-After` header when limit is exceeded.
+4. **Security Headers Defense-in-Depth (`server/security/securityHeaders.ts`)**:
+   - Applied HTTP headers on all API and web routes: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 0`, `Referrer-Policy: strict-origin-when-cross-origin`, strict Content-Security-Policy (CSP), and `X-Powered-By` suppression.
+5. **Secure Document Endpoints & Database Integration**:
+   - `POST /api/kiosk/documents/upload`: Validates buffer, processes temporary file, encrypts at rest, and saves in SQLite `documents` table with audit logging.
+   - `GET /api/clinician/cases/:id/documents`: Authenticated clinician endpoint decrypting document payloads for authorized medical inspection.
+6. **Governance & Compliance Documentation (`docs/SAFETY_AND_PRIVACY.md`)**:
+   - Documented Implemented Controls vs. Planned Future Controls table.
+   - Explicit compliance notice: academic prototype, NOT certified under HIPAA/DISHA, zero real patient data.
+   - Dependency audit: Clean (`npm audit`: 0 vulnerabilities).
+7. **Automated Verification (`src/__tests__/phase11SecurityHardening.test.ts`)**:
+   - 16 comprehensive tests covering encryption/decryption, tamper detection, magic bytes, oversized upload rejection, path sanitization, temp cleanup, rate limiting, security headers, RBAC segregation matrix (no token, kiosk token, clinician token), and end-to-end encrypted document upload/decryption.
+   - Pre-change test count: 150 passing across 18 suites.
+   - Post-change test count: **166 passing across 19 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+

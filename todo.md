@@ -205,3 +205,18 @@
 - [x] Aggregated clinic analytics endpoint (`GET /api/clinician/analytics`)
 - [x] Automated test suite in `src/__tests__/phase10Tier2ConfidenceAndAnalytics.test.ts` (8/8 passing; all 150/150 passing)
 
+---
+
+## Phase 11: Security Hardening, Encryption-at-Rest & Authorization Matrix (Completed)
+- [x] Authenticated encryption at rest (AES-256-GCM) with random IV and authentication tag (`server/security/encryption.ts`)
+- [x] Upload validation (MIME types, 10MB limit, binary magic bytes) and temp file sweeping (`server/security/fileUploadSecurity.ts`)
+- [x] Kiosk route in-memory sliding-window rate limiting with HTTP 429 & Retry-After (`server/security/rateLimiter.ts`)
+- [x] Defense-in-depth HTTP security headers (nosniff, DENY, CSP, Referrer-Policy, suppress X-Powered-By)
+- [x] Secure document endpoints (`POST /api/kiosk/documents/upload` and `GET /api/clinician/cases/:id/documents`)
+- [x] Full authorization matrix: public, kiosk token, clinician token segregation
+- [x] Verified zero API key or credentials leakage to browser
+- [x] Clean `npm audit` dependency security report (0 vulnerabilities)
+- [x] Comprehensive safety and privacy specification (`docs/SAFETY_AND_PRIVACY.md`) with explicit non-compliance disclaimer
+- [x] Automated test suite in `src/__tests__/phase11SecurityHardening.test.ts` (16/16 passing; all 166/166 passing)
+
+

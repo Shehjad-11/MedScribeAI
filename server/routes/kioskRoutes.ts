@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Router } from 'express';
 import Database from 'better-sqlite3';
 import {
@@ -13,7 +14,11 @@ import {
   getClinicalCase,
   updateSessionCase,
   recordAuditEvent,
+  saveDocumentRecord,
 } from '../db/database';
+import { validateUploadBuffer, createSecureTempFile } from '../security/fileUploadSecurity';
+import { encryptPayload } from '../security/encryption';
+
 import { ClinicalCase } from '../../src/types/clinicalCase';
 import { TEN_COMPLAINTS } from '../../src/data/complaintsCatalog';
 import {
@@ -374,5 +379,71 @@ export function createKioskRouter(getDb: () => Database.Database): Router {
     }
   });
 
+  // 7. Secure Document Upload with Validation & Encryption-at-Rest
+  router.post('/documents/upload', requireKiosk, async (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const activeCaseId = req.kioskSession!.active_case_id;
+      if (!activeCaseId) {
+        return res.status(400).json({ error: 'No active clinical case for this session' });
+      }
+
+      const { fileName, mimeType, fileBase64, documentType, ocrRawText, extractedData } = req.body;
+      if (!fileName || !mimeType || !fileBase64) {
+        return res.status(400).json({ error: 'Missing required parameters: fileName, mimeType, and fileBase64' });
+      }
+
+      const buffer = Buffer.from(fileBase64, 'base64');
+      const validation = validateUploadBuffer(buffer, fileName, mimeType);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      // Secure temp file handling with automated cleanup
+      const tempHandle = await createSecureTempFile('kiosk_doc', path.extname(validation.sanitizedFileName!), buffer);
+      await tempHandle.cleanup(); // Clean up temp file immediately after processing
+
+      // Authenticated Encryption at Rest (AES-256-GCM)
+      const encryptedPayloadString = encryptPayload({
+        rawBase64: fileBase64,
+        extractedData: extractedData || null,
+      });
+
+      const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      saveDocumentRecord(db, {
+        id: docId,
+        caseId: activeCaseId,
+        documentType: documentType === 'lab_report' ? 'lab_report' : 'prescription',
+        fileName: validation.sanitizedFileName!,
+        ocrRawText: ocrRawText || null,
+        extractedData: encryptedPayloadString, // Stored encrypted at rest
+      });
+
+      recordAuditEvent(db, {
+        caseId: activeCaseId,
+        actorType: 'patient',
+        actorId: req.kioskSession!.token,
+        action: 'DOCUMENT_UPLOADED',
+        details: {
+          docId,
+          fileName: validation.sanitizedFileName,
+          encryptedAtRest: true,
+          algorithm: 'aes-256-gcm',
+        },
+      });
+
+      res.status(201).json({
+        success: true,
+        documentId: docId,
+        fileName: validation.sanitizedFileName,
+        documentType: documentType || 'prescription',
+        encryptedAtRest: true,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Document upload failed', details: err.message });
+    }
+  });
+
   return router;
 }
+

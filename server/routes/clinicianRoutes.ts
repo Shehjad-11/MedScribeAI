@@ -12,6 +12,7 @@ import {
   updateCaseStatus,
   recordAuditEvent,
   getAuditEvents,
+  getDocumentsForCase,
 } from '../db/database';
 import { CaseStatus, ClinicalCase } from '../../src/types/clinicalCase';
 import { generateOfflineSOAPNote } from '../../src/utils/offlineLocalEngine';
@@ -19,6 +20,8 @@ import { checkDrugInteractions } from '../../src/utils/drugInteractionChecker';
 import { exportClinicalCaseToFHIR } from '../../src/utils/fhirConverter';
 import { mockAbdmAdapter, ABDM_MOCK_DISCLAIMER } from '../services/abdm/mockAbdmAdapter';
 import { calculateCaseConfidence, suggestICD10ForCase } from '../../src/utils/tier2Documentation';
+import { decryptPayload, isEncrypted } from '../security/encryption';
+
 
 
 export function createClinicianRouter(getDb: () => Database.Database): Router {
@@ -472,5 +475,48 @@ Patient: Yes, hypertension for 5 years. I take Atorvastatin and Aspirin regularl
     }
   });
 
+  // 11. Retrieve Decrypted Case Documents (Authenticated Clinician Only)
+  router.get('/cases/:id/documents', requireClinician, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const caseId = req.params.id;
+      const documents = getDocumentsForCase(db, caseId);
+
+      const processedDocs = documents.map((doc) => {
+        let extractedData = null;
+        if (doc.extracted_data_json) {
+          if (isEncrypted(doc.extracted_data_json)) {
+            try {
+              extractedData = decryptPayload(doc.extracted_data_json);
+            } catch {
+              extractedData = '[DECRYPTION_FAILED]';
+            }
+          } else {
+            try {
+              extractedData = JSON.parse(doc.extracted_data_json);
+            } catch {
+              extractedData = doc.extracted_data_json;
+            }
+          }
+        }
+        return {
+          id: doc.id,
+          caseId: doc.case_id,
+          documentType: doc.document_type,
+          fileName: doc.file_name,
+          ocrRawText: doc.ocr_raw_text,
+          extractedData,
+          createdAt: doc.created_at,
+          decryptedForClinician: true,
+        };
+      });
+
+      res.json({ caseId, count: processedDocs.length, documents: processedDocs });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to retrieve documents for case', details: err.message });
+    }
+  });
+
   return router;
 }
+

@@ -210,3 +210,19 @@
   - Total test count passes with zero regressions (150/150).
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 11: Security Hardening, Encryption-at-Rest & Authorization Matrix (Completed)
+- **Scope:**
+  - Authenticated encryption at rest (AES-256-GCM) for uploaded patient documents and extracted clinical data (`server/security/encryption.ts`).
+  - Upload security: MIME whitelist, 10MB limit, binary magic bytes verification, path sanitization, and temp-file cleanup (`server/security/fileUploadSecurity.ts`).
+  - Sliding-window in-memory rate limiting on kiosk routes (`server/security/rateLimiter.ts`).
+  - Hardened HTTP security headers (`nosniff`, `DENY`, CSP, `Referrer-Policy`, no `X-Powered-By`).
+  - Comprehensive authorization test matrix: public, kiosk token, clinician token role segregation.
+  - Authored `docs/SAFETY_AND_PRIVACY.md` detailing implemented vs planned controls and explicit non-compliance academic disclaimers.
+- **Exit Criteria:**
+  - Security hardening test suite passes 100% (`phase11SecurityHardening.test.ts`).
+  - Total test count passes with zero regressions (166/166).
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+

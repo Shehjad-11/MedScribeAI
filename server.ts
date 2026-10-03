@@ -5,9 +5,14 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { getDatabase } from './server/db/database';
 import { createKioskRouter } from './server/routes/kioskRoutes';
 import { createClinicianRouter } from './server/routes/clinicianRoutes';
+import { securityHeadersMiddleware } from './server/security/securityHeaders';
+import { kioskRateLimiter } from './server/security/rateLimiter';
 
 const app = express();
 const PORT = 3000;
+
+// Security headers defense-in-depth middleware
+app.use(securityHeadersMiddleware);
 
 // Middleware for JSON body parsing (increase limit for audio uploads)
 app.use(express.json({ limit: '50mb' }));
@@ -23,13 +28,13 @@ app.use((req, res, next) => {
   next();
 });
 
-
 // Initialize SQLite database instance
 const getDb = () => getDatabase();
 
-// Mount Security Skeleton & Tier 1 Routes
-app.use('/api/kiosk', createKioskRouter(getDb));
+// Mount Security Skeleton & Tier 1 Routes with Kiosk Rate Limiting
+app.use('/api/kiosk', kioskRateLimiter.getMiddleware(), createKioskRouter(getDb));
 app.use('/api/clinician', createClinicianRouter(getDb));
+
 
 // Lazy initializer for Gemini client
 let aiClient: GoogleGenAI | null = null;
