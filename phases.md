@@ -183,3 +183,17 @@
   - Clinician console and priority queue test suite passes 100% (phase8ClinicianConsole.test.ts).
   - Total test count passes with zero regressions.
   - Clean TypeScript compilation (	sc --noEmit).
+
+---
+
+## Phase 9: Unified SOAP Synthesis, Deterministic Safety Scope & Mock ABDM Adapter
+- **Scope:**
+  - Synthesize unified SOAP notes from ClinicalCase intake facts, document prescriptions, and consultation transcript.
+  - Implement mandatory UI disclosure on SafetyAlertsPanel: 9-rule curated dataset scope and  no alert != proof of safety banner.
+  - Extend FHIR R4 mapping to include a first-class Provenance resource linking author and patient.
+  - Build MockAbdmAdapter (server/services/abdm/mockAbdmAdapter.ts) supporting care context linking and health data push.
+  - Upgrade clinician approval gate to store original AI output, edited output, reviewer, and timestamp in SQLite.
+- **Exit Criteria:**
+  - Unified SOAP, safety engine, FHIR Provenance, and ABDM push tests pass 100% (phase9UnifiedSoapAndSafety.test.ts).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (	sc --noEmit).

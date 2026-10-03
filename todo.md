@@ -184,3 +184,13 @@
 - [x] Preservation of original direct doctor-only flow without kiosk dependency
 - [x] Navigation toggle in Header (src/components/Header.tsx)
 - [x] Automated test suite in src/__tests__/phase8ClinicianConsole.test.ts (5/5 passing; all 136/136 passing)
+
+---
+
+## Phase 9: Unified SOAP Synthesis, Deterministic Safety Scope & Mock ABDM Adapter (Completed)
+- [x] Unified SOAP generation from ClinicalCase facts, documents, and doctor transcript (server/routes/clinicianRoutes.ts)
+- [x] Deterministic safety engine with mandatory 9-rule dataset scope disclosure and  no alert != proof of safety UI notice (src/components/SafetyAlertsPanel.tsx)
+- [x] Extended FHIR R4 export with first-class Provenance resource (src/utils/fhirConverter.ts)
+- [x] Mock ABDM adapter (server/services/abdm/mockAbdmAdapter.ts) with synthetic disclaimer and POST /api/clinician/cases/:id/abdm-push
+- [x] Clinician approval gate storing original AI output, edited output, reviewer, and timestamp in SQLite
+- [x] Automated test suite in src/__tests__/phase9UnifiedSoapAndSafety.test.ts (6/6 passing; all 142/142 passing)

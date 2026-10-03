@@ -133,6 +133,17 @@ export const SafetyAlertsPanel: React.FC<SafetyAlertsPanelProps> = ({ safetyAler
               <span>No drug interaction or documentation red flags detected in this encounter.</span>
             </div>
           )}
+
+          {/* Mandatory 9-Rule Dataset & Safety Disclaimer (Section 39 / Phase 9) */}
+          <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed flex items-start gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-slate-800 block mb-0.5">Clinical Safety Dataset Scope (9 Curated Rules)</span>
+              <span>
+                The deterministic safety engine evaluates prescribed therapies against a curated dataset of exactly 9 high-risk primary care interaction rules. <strong>The absence of an alert is NOT proof of clinical safety.</strong> Prescribing physician review and verification remains mandatory.
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

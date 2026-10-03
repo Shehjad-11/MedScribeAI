@@ -345,6 +345,47 @@ export function exportClinicalCaseToFHIR(
     ];
   }
 
+  // Attach first-class FHIR Provenance resource (HL7 FHIR R4)
+  const provenanceId = `provenance-${clinicalCase.id}`;
+  const provenanceResource: FHIRResource = {
+    resourceType: 'Provenance',
+    id: provenanceId,
+    target: [
+      { reference: `Patient/${patientInfo.id}` },
+    ],
+    recorded: new Date().toISOString(),
+    activity: {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-DataOperation',
+          code: 'CREATE',
+          display: 'Clinical Intake & Consultation Documentation',
+        },
+      ],
+    },
+    agent: [
+      {
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/provenance-participant-type',
+              code: 'author',
+              display: 'Author / Verifier',
+            },
+          ],
+        },
+        who: {
+          display: clinicalCase.consultation?.approvedBy || 'Dr. Clinician',
+        },
+      },
+    ],
+  };
+
+  bundle.entry.push({
+    fullUrl: `urn:uuid:${provenanceId}`,
+    resource: provenanceResource,
+  });
+
   return bundle;
 }
 

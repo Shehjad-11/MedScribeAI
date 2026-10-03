@@ -17,6 +17,7 @@ import { CaseStatus, ClinicalCase } from '../../src/types/clinicalCase';
 import { generateOfflineSOAPNote } from '../../src/utils/offlineLocalEngine';
 import { checkDrugInteractions } from '../../src/utils/drugInteractionChecker';
 import { exportClinicalCaseToFHIR } from '../../src/utils/fhirConverter';
+import { mockAbdmAdapter, ABDM_MOCK_DISCLAIMER } from '../services/abdm/mockAbdmAdapter';
 
 
 export function createClinicianRouter(getDb: () => Database.Database): Router {
@@ -142,7 +143,9 @@ export function createClinicianRouter(getDb: () => Database.Database): Router {
       }
 
       const approvedAt = new Date().toISOString();
-      const approvedBy = req.body.approvedBy || 'Dr. Clinician';
+      const reviewer = req.body.approvedBy || req.actorId || 'Dr. Clinician';
+      const originalAiOutput = req.body.originalAiOutput || (clinicalCase.consultation as any)?.originalAiOutput || null;
+      const editedOutput = req.body.editedOutput || req.body.clinicianNotes || null;
 
       clinicalCase.status = 'clinician_approved';
       clinicalCase.updatedAt = approvedAt;
@@ -150,22 +153,38 @@ export function createClinicianRouter(getDb: () => Database.Database): Router {
         clinicalCase.consultation = {};
       }
       clinicalCase.consultation.approvedAt = approvedAt;
-      clinicalCase.consultation.approvedBy = approvedBy;
+      clinicalCase.consultation.approvedBy = reviewer;
       if (req.body.clinicianNotes) {
         clinicalCase.consultation.clinicianNotes = req.body.clinicianNotes;
       }
+      (clinicalCase.consultation as any).originalAiOutput = originalAiOutput;
+      (clinicalCase.consultation as any).editedOutput = editedOutput;
 
       saveClinicalCase(db, clinicalCase);
 
       recordAuditEvent(db, {
         caseId: req.params.id,
         actorType: 'clinician',
-        actorId: approvedBy,
+        actorId: reviewer,
         action: 'CLINICIAN_APPROVAL',
-        details: { caseId: req.params.id, approvedAt, approvedBy },
+        details: {
+          caseId: req.params.id,
+          approvedAt,
+          reviewer,
+          hasOriginalAiOutput: !!originalAiOutput,
+          hasEditedOutput: !!editedOutput,
+        },
       });
 
-      res.json({ success: true, caseId: req.params.id, status: 'clinician_approved', approvedAt });
+      res.json({
+        success: true,
+        caseId: req.params.id,
+        status: 'clinician_approved',
+        approvedAt,
+        reviewer,
+        originalAiOutput,
+        editedOutput,
+      });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to record clinician approval', details: err.message });
     }
@@ -197,6 +216,51 @@ export function createClinicianRouter(getDb: () => Database.Database): Router {
       res.json({ success: true, caseId: req.params.id, status: 'fhir_exported', bundle });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to record FHIR export', details: err.message });
+    }
+  });
+
+  // 7. Mock ABDM Health Data Push (Authenticated)
+  router.post('/cases/:id/abdm-push', requireClinician, async (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const clinicalCase = getClinicalCase(db, req.params.id);
+      if (!clinicalCase) {
+        return res.status(404).json({ error: `Case ${req.params.id} not found` });
+      }
+
+      const abhaId = req.body.abhaId || '91-1234-5678-9012';
+      const patientName = clinicalCase.patient?.name?.value || 'Anonymous Patient';
+
+      // 1. Link Care Context
+      const linkResult = await mockAbdmAdapter.linkCareContext(abhaId, patientName, clinicalCase.id);
+
+      // 2. Generate FHIR Bundle
+      const bundle = exportClinicalCaseToFHIR(clinicalCase, (clinicalCase.consultation as any)?.soapNote);
+
+      // 3. Push Health Data to Mock Gateway
+      const pushResult = await mockAbdmAdapter.pushHealthData(clinicalCase.id, linkResult.careContext, bundle);
+
+      recordAuditEvent(db, {
+        caseId: req.params.id,
+        actorType: 'clinician',
+        actorId: req.actorId || 'clinician',
+        action: 'ABDM_HEALTH_DATA_PUSHED',
+        details: {
+          transactionId: pushResult.transactionId,
+          careContext: linkResult.careContext.careContextReference,
+          isMock: true,
+        },
+      });
+
+      res.json({
+        success: true,
+        isMock: true,
+        disclaimer: ABDM_MOCK_DISCLAIMER,
+        linkResult,
+        pushResult,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to push ABDM health record', details: err.message });
     }
   });
 
