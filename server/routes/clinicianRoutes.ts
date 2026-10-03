@@ -18,6 +18,7 @@ import { generateOfflineSOAPNote } from '../../src/utils/offlineLocalEngine';
 import { checkDrugInteractions } from '../../src/utils/drugInteractionChecker';
 import { exportClinicalCaseToFHIR } from '../../src/utils/fhirConverter';
 import { mockAbdmAdapter, ABDM_MOCK_DISCLAIMER } from '../services/abdm/mockAbdmAdapter';
+import { calculateCaseConfidence, suggestICD10ForCase } from '../../src/utils/tier2Documentation';
 
 
 export function createClinicianRouter(getDb: () => Database.Database): Router {
@@ -371,7 +372,7 @@ Patient: Yes, hypertension for 5 years. I take Atorvastatin and Aspirin regularl
   });
 
 
-  // 7. Audit Events Viewer (Authenticated)
+  // 7. Audit Events & Logs Viewer (Authenticated)
   router.get('/audit-events', requireClinician, (req: AuthenticatedRequest, res) => {
     try {
       const db = getDb();
@@ -380,6 +381,94 @@ Patient: Yes, hypertension for 5 years. I take Atorvastatin and Aspirin regularl
       res.json({ count: events.length, events });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to fetch audit events', details: err.message });
+    }
+  });
+
+  router.get('/audit-logs', requireClinician, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const caseId = req.query.caseId as string | undefined;
+      const events = getAuditEvents(db, caseId);
+      res.json({ count: events.length, logs: events });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch audit logs', details: err.message });
+    }
+  });
+
+  // 8. Basic Clinic Analytics (Authenticated)
+  router.get('/analytics', requireClinician, (_req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const cases = listClinicalCases(db);
+
+      const totalCases = cases.length;
+      let approvedCount = 0;
+      let totalRedFlags = 0;
+      const langDist: Record<string, number> = { en: 0, hi: 0, mr: 0, es: 0 };
+      const complaintDist: Record<string, number> = {};
+      let totalConfidence = 0;
+
+      for (const c of cases) {
+        if (c.status === 'clinician_approved' || c.status === 'fhir_exported') {
+          approvedCount++;
+        }
+        totalRedFlags += c.intake?.redFlags?.length || 0;
+        const l = c.language || 'en';
+        langDist[l] = (langDist[l] || 0) + 1;
+
+        const comp = c.intake?.chiefComplaint?.value || 'Other';
+        complaintDist[comp] = (complaintDist[comp] || 0) + 1;
+
+        const conf = calculateCaseConfidence(c);
+        totalConfidence += conf.overallScore;
+      }
+
+      const avgConfidence = totalCases > 0 ? Math.round(totalConfidence / totalCases) : 100;
+
+      res.json({
+        totalCases,
+        approvedCases: approvedCount,
+        pendingReviewCount: totalCases - approvedCount,
+        totalRedFlagsDetected: totalRedFlags,
+        averageDocumentationConfidence: avgConfidence,
+        languageDistribution: langDist,
+        complaintDistribution: complaintDist,
+        generatedAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to compute clinic analytics', details: err.message });
+    }
+  });
+
+  // 9. Documentation Confidence Scorer (Authenticated)
+  router.get('/cases/:id/confidence', requireClinician, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const clinicalCase = getClinicalCase(db, req.params.id);
+      if (!clinicalCase) {
+        return res.status(404).json({ error: `Case ${req.params.id} not found` });
+      }
+
+      const report = calculateCaseConfidence(clinicalCase);
+      res.json({ caseId: req.params.id, confidenceReport: report });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to calculate case confidence', details: err.message });
+    }
+  });
+
+  // 10. ICD-10 Suggestions with CPT Explicitly Off (Authenticated)
+  router.get('/cases/:id/icd10-suggestions', requireClinician, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const clinicalCase = getClinicalCase(db, req.params.id);
+      if (!clinicalCase) {
+        return res.status(404).json({ error: `Case ${req.params.id} not found` });
+      }
+
+      const suggestions = suggestICD10ForCase(clinicalCase);
+      res.json({ caseId: req.params.id, suggestions });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to generate ICD-10 suggestions', details: err.message });
     }
   });
 

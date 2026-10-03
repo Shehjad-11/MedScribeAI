@@ -193,4 +193,15 @@
 - [x] Extended FHIR R4 export with first-class Provenance resource (src/utils/fhirConverter.ts)
 - [x] Mock ABDM adapter (server/services/abdm/mockAbdmAdapter.ts) with synthetic disclaimer and POST /api/clinician/cases/:id/abdm-push
 - [x] Clinician approval gate storing original AI output, edited output, reviewer, and timestamp in SQLite
-- [x] Automated test suite in src/__tests__/phase9UnifiedSoapAndSafety.test.ts (6/6 passing; all 142/142 passing)
+- [x] Automated test suite in `src/__tests__/phase9UnifiedSoapAndSafety.test.ts` (6/6 passing; all 142/142 passing)
+
+---
+
+## Phase 10: Documentation Confidence, ICD-10 Suggestions & Clinic Analytics (Completed)
+- [x] Unified case documentation confidence score (0-100) and section breakdown (`src/utils/tier2Documentation.ts`)
+- [x] Primary care ICD-10 code suggester with explicit CPT billing disablement
+- [x] Clinician endpoints for confidence (`GET /api/clinician/cases/:id/confidence`) and ICD-10 (`GET /api/clinician/cases/:id/icd10-suggestions`)
+- [x] Clinician immutable audit-log viewer endpoint (`GET /api/clinician/audit-logs`)
+- [x] Aggregated clinic analytics endpoint (`GET /api/clinician/analytics`)
+- [x] Automated test suite in `src/__tests__/phase10Tier2ConfidenceAndAnalytics.test.ts` (8/8 passing; all 150/150 passing)
+

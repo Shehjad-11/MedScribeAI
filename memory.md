@@ -637,9 +637,31 @@ pm run lint (	sc --noEmit): **0 errors**.
 5. **Clinician Approval Gate Audit Storage (server/routes/clinicianRoutes.ts)**:
    - Enhanced POST /api/clinician/cases/:id/approve to explicitly store all 4 mandatory audit elements: originalAiOutput, editedOutput, eviewer, and pprovedAt timestamp.
    - Verified persistence in SQLite clinical_cases and udit_events.
-6. **Automated Verification (src/__tests__/phase9UnifiedSoapAndSafety.test.ts)**:
+6. **Automated Verification (`src/__tests__/phase9UnifiedSoapAndSafety.test.ts`)**:
    - 6 comprehensive tests verifying SOAP generation from case, safety engine alerts, uncurated drug warnings, extended FHIR Provenance, mock ABDM responses, and clinician approval audit storage.
    - Pre-change test count: 136 passing across 16 suites.
    - Post-change test count: **142 passing across 17 suites (0 regressions)**.
-   - 
-pm run lint (	sc --noEmit): **0 errors**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+---
+
+## Session Log: 2026-10-03 — Phase 10: Documentation Confidence, ICD-10 Suggestions & Clinic Analytics
+
+### Summary of Implementation & Verification
+1. **Case Documentation Confidence Engine (`src/utils/tier2Documentation.ts`)**:
+   - Built `calculateCaseConfidence` evaluating completeness across 4 clinical sections: Demographics (25 pts), Intake Core (25 pts), Questionnaire Responses (25 pts), and Triage & Documents (25 pts).
+   - Emits overall numerical score (0-100), rating (`High` >= 80, `Medium` >= 50, `Low` < 50), breakdown by section, and specific missing items list.
+2. **Primary Care ICD-10 Code Suggester (`src/utils/tier2Documentation.ts`)**:
+   - Built `suggestICD10ForCase` matching chief complaints and symptoms against primary care ICD-10 mappings (e.g. Chest pain R07.9, Angina I20.9, Acute MI I21.9, Fever R50.9, Cough R05).
+   - Strict Indian Primary Care Policy: CPT billing code generation is explicitly disabled with permanent disclaimer (`CPT Coding Disabled (Indian Primary Care Context / SIH Spec)`).
+3. **Clinician Analytics & Audit-Log Endpoints (`server/routes/clinicianRoutes.ts`)**:
+   - `GET /api/clinician/cases/:id/confidence`: Returns documentation confidence breakdown.
+   - `GET /api/clinician/cases/:id/icd10-suggestions`: Returns rule-based ICD-10 suggestions with CPT disabled.
+   - `GET /api/clinician/audit-logs`: Retrieves immutable audit trail from SQLite `audit_events` with action filtering and limit parameter.
+   - `GET /api/clinician/analytics`: Aggregates case volume, priority distribution (Emergency, Urgent, Normal), status counts (Submitted, Approved), red-flag incident counts, and document intake counts.
+4. **Automated Verification (`src/__tests__/phase10Tier2ConfidenceAndAnalytics.test.ts`)**:
+   - 8 comprehensive tests verifying confidence scoring (High for complete chest pain case, Low for partial case), ICD-10 mapping, CPT disabled invariant, audit log querying, and clinic analytics aggregation.
+   - Pre-change test count: 142 passing across 17 suites.
+   - Post-change test count: **150 passing across 18 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+

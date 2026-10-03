@@ -196,4 +196,17 @@
 - **Exit Criteria:**
   - Unified SOAP, safety engine, FHIR Provenance, and ABDM push tests pass 100% (phase9UnifiedSoapAndSafety.test.ts).
   - Total test count passes with zero regressions.
-  - Clean TypeScript compilation (	sc --noEmit).
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+---
+
+## Phase 10: Documentation Confidence, ICD-10 Suggestions & Clinic Analytics (Completed)
+- **Scope:**
+  - Build `calculateCaseConfidence` scoring overall documentation completeness (0-100) across demographics, intake, interview, and triage/documents.
+  - Implement rule-based primary care ICD-10 code suggestions with explicit CPT billing disablement.
+  - Expose clinician endpoints for case confidence, ICD-10 suggestions, immutable audit log inspection, and aggregated clinic triage analytics.
+- **Exit Criteria:**
+  - Tier 2 confidence, ICD-10, and analytics integration tests pass 100% (`phase10Tier2ConfidenceAndAnalytics.test.ts`).
+  - Total test count passes with zero regressions (150/150).
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
