@@ -13,7 +13,7 @@ import {
   recordAuditEvent,
   getAuditEvents,
 } from '../db/database';
-import { CaseStatus } from '../../src/types/clinicalCase';
+import { CaseStatus, ClinicalCase } from '../../src/types/clinicalCase';
 import { generateOfflineSOAPNote } from '../../src/utils/offlineLocalEngine';
 import { checkDrugInteractions } from '../../src/utils/drugInteractionChecker';
 import { exportClinicalCaseToFHIR } from '../../src/utils/fhirConverter';
@@ -44,27 +44,57 @@ export function createClinicianRouter(getDb: () => Database.Database): Router {
     }
   });
 
-  // 2. Clinician Queue (Authenticated)
+  // 2. Clinician Queue (Authenticated with Priority Sorting)
   router.get('/queue', requireClinician, (req: AuthenticatedRequest, res) => {
     try {
       const db = getDb();
       const statusFilter = req.query.status as CaseStatus | undefined;
       const cases = listClinicalCases(db, statusFilter ? { status: statusFilter } : undefined);
 
-      // Return queue summary for doctor review
-      const queueItems = cases.map((c) => ({
-        id: c.id,
-        status: c.status,
-        patientName: c.patient?.name?.value || 'Unknown',
-        age: c.patient?.age?.value,
-        sex: c.patient?.sex?.value,
-        chiefComplaint: c.intake?.chiefComplaint?.value || 'Unspecified',
-        language: c.language,
-        hasRedFlags: (c.intake?.redFlags?.length || 0) > 0,
-        redFlagsCount: c.intake?.redFlags?.length || 0,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-      }));
+      function computeCasePriority(c: ClinicalCase): { priority: number; label: string } {
+        const flags = c.intake?.redFlags || [];
+        if (flags.some((f) => f.severity === 'EMERGENCY')) {
+          return { priority: 1, label: 'EMERGENCY' };
+        }
+        if (flags.some((f) => f.severity === 'URGENT')) {
+          return { priority: 2, label: 'URGENT' };
+        }
+        if (flags.some((f) => f.severity === 'WARNING')) {
+          return { priority: 3, label: 'WARNING' };
+        }
+        return { priority: 4, label: 'NORMAL' };
+      }
+
+      // Map and sort: Priority 1 first, then newest first
+      const queueItems = cases
+        .map((c) => {
+          const { priority, label } = computeCasePriority(c);
+          return {
+            id: c.id,
+            status: c.status,
+            patientName: c.patient?.name?.value || 'Unknown',
+            age: c.patient?.age?.value,
+            sex: c.patient?.sex?.value,
+            chiefComplaint: c.intake?.chiefComplaint?.value || 'Unspecified',
+            language: c.language,
+            priority,
+            priorityLabel: label,
+            hasRedFlags: (c.intake?.redFlags?.length || 0) > 0,
+            redFlagsCount: c.intake?.redFlags?.length || 0,
+            redFlags: c.intake?.redFlags || [],
+            hasDocuments: (c.documents?.length || 0) > 0,
+            hasAyush: !!c.intake?.ayushAssessment,
+            ayushPrakriti: c.intake?.ayushAssessment?.prakriti?.value,
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+          };
+        })
+        .sort((a, b) => {
+          if (a.priority !== b.priority) {
+            return a.priority - b.priority; // 1 (EMERGENCY) before 4 (NORMAL)
+          }
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
 
       res.json({ count: queueItems.length, queue: queueItems });
     } catch (err: any) {

@@ -172,3 +172,15 @@
 - [x] Kiosk API endpoints (GET /api/kiosk/ayush/questions, POST /api/kiosk/ayush/evaluate, POST /api/kiosk/ayush/save)
 - [x] Formal BAMS reviewer review packet (docs/AYUSH_REVIEW_PACKET.md)
 - [x] Automated test suite in src/__tests__/phase7AyushSlice.test.ts (15/15 passing; all 131/131 passing)
+
+---
+
+## Phase 8: Clinician Console, Priority Queue & Preloaded Consultation Workflow (Completed)
+- [x] Priority queue triage sorting in GET /api/clinician/queue (Emergency Priority 1 > Urgent Priority 2 > Normal Priority 4)
+- [x] Clinician console workstation component (src/components/clinician/ClinicianConsole.tsx)
+- [x] Prominent red-flag banner displaying rule IDs, versions, and safe triage directives
+- [x] Patient-ready summary card with visual clinical provenance badges (PATIENT_REPORTED, DOCUMENT_EXTRACTED)
+- [x] Preloaded consultation workflow into existing doctor workspace (src/App.tsx)
+- [x] Preservation of original direct doctor-only flow without kiosk dependency
+- [x] Navigation toggle in Header (src/components/Header.tsx)
+- [x] Automated test suite in src/__tests__/phase8ClinicianConsole.test.ts (5/5 passing; all 136/136 passing)

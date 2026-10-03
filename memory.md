@@ -590,3 +590,29 @@ pm run lint (	sc --noEmit): **0 errors**.
    - Post-change test count: **131 passing across 15 suites (0 regressions)**.
    - 
 pm run lint (	sc --noEmit): **0 errors**.
+
+---
+
+## Session Log: 2026-10-03 — Phase 8: Clinician Console, Priority Queue & Preloaded Consultation Workflow
+
+### Summary of Implementation & Verification
+1. **Priority Queue Sorting (server/routes/clinicianRoutes.ts)**:
+   - Implemented deterministic triage priority calculation: Priority 1 (EMERGENCY) > Priority 2 (URGENT) > Priority 3 (WARNING) > Priority 4 (NORMAL).
+   - Enforced priority queue sorting in GET /api/clinician/queue, sorting STAT Emergency patients to the very top followed by newest entries.
+   - Enriched queue summaries with red-flag counts, document indicators, and AYUSH assessment summaries.
+2. **Clinician Console Component (src/components/clinician/ClinicianConsole.tsx)**:
+   - Built 2-column triage workstation: left column priority patient queue with search/filter, right column comprehensive case inspector.
+   - Displays prominent red-flag alert banner with rule ID, rule version (1.0.0), trigger facts, and safe non-diagnostic triage directives.
+   - Patient-ready summary card with visual clinical provenance badges (PATIENT_REPORTED [touch], DOCUMENT_EXTRACTED [ocr], CLINICIAN_OBSERVED, AI_GENERATED).
+   - Includes AYUSH intake summary card with mandatory [PENDING BAMS REVIEW] label.
+3. **Doctor Consultation Preloader (src/App.tsx)**:
+   - Implemented handleLoadCaseIntoWorkstation preloading patient demographics, chief complaint, symptom onset, questionnaire responses, document prescriptions, and AYUSH summaries into the doctor consultation workspace.
+   - Preserved original direct doctor-only flow: clinicians can bypass the queue entirely and run manual consultations, sample scenarios, offline local engine, and drug interaction checkers directly.
+4. **Header Navigation Integration (src/components/Header.tsx)**:
+   - Added Triage Queue button allowing clinicians to toggle between the queue/console and the doctor consultation workspace.
+5. **Automated Verification (src/__tests__/phase8ClinicianConsole.test.ts)**:
+   - 5 comprehensive tests verifying strict priority queue sorting (Emergency before Urgent before Normal), red-flag banner metadata, provenance invariants, and doctor-only workflow preservation.
+   - Pre-change test count: 131 passing across 15 suites.
+   - Post-change test count: **136 passing across 16 suites (0 regressions)**.
+   - 
+pm run lint (	sc --noEmit): **0 errors**.

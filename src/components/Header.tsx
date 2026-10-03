@@ -11,6 +11,7 @@ interface HeaderProps {
   safetyAlertsCount: number;
   isOfflineMode?: boolean;
   onToggleOfflineMode?: () => void;
+  onOpenClinicianConsole?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalEncountersCount,
   isOfflineMode = false,
   onToggleOfflineMode,
+  onOpenClinicianConsole,
 }) => {
   const { language, setLanguage, t } = useTranslation();
 
@@ -114,6 +116,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <span className="hidden sm:inline">{t.header.productInfo}</span>
               <span className="sm:hidden">{t.header.infoShort}</span>
+            </button>
+          )}
+
+          {onOpenClinicianConsole && (
+            <button
+              id="btn-open-triage-queue"
+              onClick={onOpenClinicianConsole}
+              className="btn-outline text-slate-800 bg-white hover:bg-slate-50 border-slate-300 py-1.5 px-3 text-xs flex items-center space-x-1.5"
+              title="Open Clinician Triage Queue"
+            >
+              <Stethoscope className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden sm:inline">Triage Queue</span>
             </button>
           )}
 

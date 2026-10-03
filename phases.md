@@ -170,3 +170,16 @@
   - AYUSH unit and integration test suite passes 100% (phase7AyushSlice.test.ts).
   - Total test count passes with zero regressions.
   - Clean TypeScript compilation (	sc --noEmit).
+
+---
+
+## Phase 8: Clinician Console, Priority Queue & Preloaded Consultation Workflow
+- **Scope:**
+  - Enhance GET /api/clinician/queue with deterministic priority queue sorting placing Priority 1 EMERGENCY cases at top.
+  - Implement full Clinician Console (src/components/clinician/ClinicianConsole.tsx) with priority queue filtering, red-flag alert banners, and patient-ready summary cards.
+  - Integrate provenance badges (PATIENT_REPORTED, DOCUMENT_EXTRACTED, etc.) throughout clinical fact cards.
+  - Build preloading mechanism into the existing consultation workspace while strictly preserving direct doctor-only consultation flows.
+- **Exit Criteria:**
+  - Clinician console and priority queue test suite passes 100% (phase8ClinicianConsole.test.ts).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (	sc --noEmit).

@@ -70,6 +70,7 @@ export interface PatientConsent {
 export interface RedFlagAlert {
   id: string;
   ruleId: string;
+  ruleVersion?: string;
   severity: 'EMERGENCY' | 'URGENT' | 'WARNING';
   title: string;
   description: string;

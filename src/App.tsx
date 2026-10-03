@@ -17,12 +17,14 @@ import { Sparkles, AlertCircle, FileText, CheckCircle2, RotateCcw, HeartPulse } 
 import { checkDrugInteractions } from './utils/drugInteractionChecker';
 import { generateOfflineSOAPNote } from './utils/offlineLocalEngine';
 import { FHIRExportModal } from './components/soap-note';
+import { ClinicianConsole } from './components/clinician/ClinicianConsole';
+import { ClinicalCase } from './types/clinicalCase';
 
 const STORAGE_KEY = 'medscribe_lite_encounters_v1';
 
 export default function App() {
-  // Navigation view state: 'landing' | 'workstation'
-  const [currentView, setCurrentView] = useState<'landing' | 'workstation'>('landing');
+  // Navigation view state: 'landing' | 'workstation' | 'clinician_console'
+  const [currentView, setCurrentView] = useState<'landing' | 'workstation' | 'clinician_console'>('landing');
 
   // Offline local model mode state
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
@@ -194,8 +196,67 @@ export default function App() {
     }
   };
 
+  // Preload ClinicalCase from Clinician Console into doctor workstation
+  const handleLoadCaseIntoWorkstation = (c: ClinicalCase) => {
+    setPatientInfo({
+      name: c.patient?.name?.value || 'Anonymous Patient',
+      age: c.patient?.age?.value || '',
+      sex: (c.patient?.sex?.value as any) || 'Male',
+      medicalHistory: c.intake?.pastMedicalHistory?.value || '',
+      currentMedications: c.intake?.currentMedications?.value?.join(', ') || '',
+      knownAllergies: c.intake?.allergies?.value?.join(', ') || 'NKDA',
+      encounterType: 'Acute Unscheduled Visit',
+      clinicLocation: 'Primary Care Clinic',
+    });
+
+    const complaint = c.intake?.chiefComplaint?.value || 'Unspecified complaint';
+    const onset = c.intake?.symptomOnset?.value || 'recent onset';
+    const responsesText = Object.entries(c.intake?.questionResponses || {})
+      .map(([k, v]) => `- ${k}: ${v.value}`)
+      .join('\n');
+    const ayushText = c.intake?.ayushAssessment?.prakriti?.value
+      ? `\nAYUSH Prakriti: ${c.intake.ayushAssessment.prakriti.value}\nAYUSH Agni: ${c.intake.ayushAssessment.agni?.value || 'Unassessed'}`
+      : '';
+
+    const rxItems = c.documents?.flatMap((d) => d.extractedPrescriptions || []) || [];
+    const rxText = rxItems.length > 0
+      ? `\nPrior Prescriptions (from Document OCR):\n` + rxItems.map((r) => `- ${r.medication} ${r.dosage} (${r.frequency})`).join('\n')
+      : '';
+
+    const simulatedTranscript = `Doctor: Good day. I see you came in with ${complaint}. When did this start?
+Patient: It started about ${onset}.
+${responsesText ? `Doctor: Let us review your reported symptoms:\n${responsesText}` : ''}${rxText}${ayushText}
+Doctor: Understood. Let me examine you and formulate our treatment plan.`;
+
+    setTranscript(simulatedTranscript);
+    setSoapNote(null);
+    setCurrentView('workstation');
+  };
+
   if (currentView === 'landing') {
     return <LandingPage onLaunchWorkstation={() => setCurrentView('workstation')} />;
+  }
+
+  if (currentView === 'clinician_console') {
+    return (
+      <div id="app-root" className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+        <Header
+          onOpenHistory={() => setActiveModal('history')}
+          onOpenAnalytics={() => setActiveModal('analytics')}
+          onSelectSampleScenario={() => handleSelectScenario(SAMPLE_SCENARIOS[0].id)}
+          onNavigateToLanding={() => setCurrentView('landing')}
+          totalEncountersCount={encounters.length}
+          safetyAlertsCount={soapNote?.safety_alerts?.length || 0}
+          isOfflineMode={isOfflineMode}
+          onToggleOfflineMode={() => setIsOfflineMode((prev) => !prev)}
+          onOpenClinicianConsole={() => setCurrentView('clinician_console')}
+        />
+        <ClinicianConsole
+          onLoadCaseIntoWorkstation={handleLoadCaseIntoWorkstation}
+          onDirectDoctorConsultation={() => setCurrentView('workstation')}
+        />
+      </div>
+    );
   }
 
   return (
@@ -213,6 +274,7 @@ export default function App() {
         safetyAlertsCount={soapNote?.safety_alerts?.length || 0}
         isOfflineMode={isOfflineMode}
         onToggleOfflineMode={() => setIsOfflineMode((prev) => !prev)}
+        onOpenClinicianConsole={() => setCurrentView('clinician_console')}
       />
 
       {/* Main Workspace Body */}
