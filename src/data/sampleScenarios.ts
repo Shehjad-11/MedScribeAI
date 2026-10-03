@@ -2,6 +2,34 @@ import { SampleScenario } from '../types';
 
 export const SAMPLE_SCENARIOS: SampleScenario[] = [
   {
+    id: 'sih-primary-chest-pain',
+    title: 'Primary Scenario: Acute Coronary Syndrome (Chest Pain)',
+    category: 'Cardiovascular (Priority 1 STAT)',
+    description: '52-year-old male with acute retrosternal chest pain radiating to left arm & jaw, diaphoresis, hypertension history, on daily Amlodipine 5mg.',
+    patientInfo: {
+      name: 'Ramesh Kumar Patil',
+      age: 52,
+      sex: 'Male',
+      medicalHistory: 'Essential Hypertension (6 yrs), Dyslipidemia. Non-smoker.',
+      currentMedications: 'Tab. Amlodipine 5mg OD, Tab. Atorvastatin 20mg HS',
+      knownAllergies: 'NKDA (No Known Drug Allergies)',
+      encounterType: 'Stat Emergency Triage Walk-in',
+      clinicLocation: 'Wagholi Rural Health Sub-Centre'
+    },
+    transcript: `Doctor: Mr. Ramesh Patil, please sit right here on the examination couch. The kiosk flagged high-priority acute chest pain with radiation. How long has this been going on?
+Patient: Doctor, it started about two hours ago while I was working in the field. Suddenly there was a heavy, crushing weight right in the center of my chest, like an elephant sitting on me. Then the pain started shooting down my left arm and up into my lower jaw.
+Doctor: Are you feeling breathless or sweating unusually?
+Patient: Yes doctor, cold sweats all over my forehead and shirt. I feel very short of breath even while resting.
+Doctor: Let me check your vitals immediately. Blood pressure is 164/98 mmHg. Heart rate is 106 beats per minute, regular. Oxygen saturation is 94% on room air. Respiratory rate is 22 breaths per minute.
+Doctor: On cardiac auscultation, S1 and S2 present, tachycardic, no murmurs. Bilateral lung bases show clear breath sounds without crepitations. Abdomen is soft and non-tender.
+Doctor: Sister, stat 12-lead ECG right now, and start supplemental oxygen at 4 liters per minute via nasal prongs.
+Doctor: While the ECG is printing: The pattern of retrosternal pressure radiating to your left arm and jaw with profuse cold diaphoresis indicates suspected Acute Coronary Syndrome or unstable angina.
+Doctor: The 12-lead ECG is showing 2mm ST-segment elevation in leads V2 through V5 with reciprocal depression in inferior leads. This is an acute anterior wall ST-elevation myocardial infarction (STEMI).
+Doctor: Mr. Patil, we are giving you immediate emergency loading therapy: Soluble Aspirin 300mg to chew immediately, Clopidogrel 300mg stat, and one sublingual Sorbitrate 5mg tablet under your tongue. Continue your existing Amlodipine and Atorvastatin.
+Doctor: Sister, alert the 108 Cardiac Ambulance service immediately. Patient requires emergency transfer to the District Civil Hospital Cath Lab for primary PCI or thrombolytic therapy. I will write the emergency referral note and accompany the handoff.`
+  },
+  {
+
     id: 'malaria-fever',
     title: 'Acute Febrile Illness / Suspected Malaria',
     category: 'Infectious Disease',

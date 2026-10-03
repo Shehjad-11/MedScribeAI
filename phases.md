@@ -268,6 +268,28 @@
   - Total test count passes with zero regressions (166/166).
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 15: Demonstration Hardening, Primary Scenario & Failure Drills (Completed)
+- **Scope:**
+  - Scripted primary demonstration clinical scenario: 52-year-old male Ramesh Kumar Patil with retrosternal chest pain radiating to left arm and jaw, cold diaphoresis, and hypertension on Amlodipine (`src/data/sampleScenarios.ts`).
+  - Verified Priority 1 STAT / EMERGENCY triage alert (`RF-CARD-001`, rule version 1.0.0, action required: immediate 12-lead ECG and emergency referral).
+  - Authored master demonstration runbook (`docs/DEMO_RUNBOOK.md`) covering the 7-minute golden path walkthrough.
+  - Formulated 7 operational failure drills:
+    1. Internet disconnected / local offline engine fallback.
+    2. Gemini API quota exhausted / non-fabrication rule ("Not documented").
+    3. OCR scan unreadable / deterministic local fallback & manual entry.
+    4. Speech recognition microphone denied / typing dictation fallback.
+    5. SQLite process crash & ACID WAL crash recovery.
+    6. Abandoned kiosk patient reset & cross-patient data isolation wipe.
+    7. Encrypted document tampering detection & auth-tag rejection.
+  - Built comprehensive automated verification suite (`src/__tests__/phase15DemoHardening.test.ts`).
+- **Exit Criteria:**
+  - Primary scenario and all 7 failure drills pass unit and regression tests (9/9 in Phase 15 suite).
+  - Total test count passes with zero regressions (175/175 across 20 suites).
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 
 
 

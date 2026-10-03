@@ -251,6 +251,24 @@
 - [x] Enforced safe default (tunneling disabled by default; zero external hosting contact)
 - [x] All 166 tests passing across 19 suites with zero regressions
 
+---
+
+## Phase 15: Demo Hardening, Primary Scenario & Failure Drills (Completed)
+- [x] Scripted primary clinical scenario: 52-year-old male Ramesh Kumar Patil with acute retrosternal chest pain, cold diaphoresis, and hypertension on Amlodipine (`src/data/sampleScenarios.ts`)
+- [x] Verified emergency triage alert triggering (`RF-CARD-001`, Priority 1 STAT / EMERGENCY)
+- [x] Master demonstration runbook authored (`docs/DEMO_RUNBOOK.md`) detailing the 7-minute golden path walkthrough
+- [x] Structured 7 failure drills with actionable operator recovery steps:
+  - [x] Drill 1: Internet disconnected / air-gapped local offline engine fallback
+  - [x] Drill 2: Gemini API quota exhaustion / non-fabrication rule ("Not documented")
+  - [x] Drill 3: OCR unreadable document fallback to local deterministic parser / manual entry
+  - [x] Drill 4: ASR speech recognition microphone denied fallback to typing dictation
+  - [x] Drill 5: SQLite database process crash & ACID WAL recovery
+  - [x] Drill 6: Abandoned kiosk session wipe and cross-patient isolation
+  - [x] Drill 7: Encrypted payload tampering detection at rest
+- [x] Automated test suite in `src/__tests__/phase15DemoHardening.test.ts` (9/9 passing; all 175/175 passing across 20 suites)
+- [x] TypeScript compilation verified clean (`tsc --noEmit`, 0 errors)
+
+
 
 
 

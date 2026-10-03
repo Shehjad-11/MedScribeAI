@@ -765,6 +765,31 @@ pm run lint (	sc --noEmit): **0 errors**.
    - Total test suites passing: **166/166 passing across 19 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 15: Demonstration Hardening, Primary Scripted Scenario & Failure Drills
+
+### Summary of Implementation & Verification
+1. **Primary Scripted Scenario Specification (`src/data/sampleScenarios.ts`)**:
+   - Formalized primary demonstration persona: 52-year-old male Ramesh Kumar Patil (`sih-primary-chest-pain`).
+   - Profile: Essential hypertension on Amlodipine 5mg OD; presents with crushing retrosternal chest pain radiating to left arm and jaw, cold diaphoresis, pain scale 9/10.
+   - Triggers Priority 1 STAT / EMERGENCY triage alert (`RF-CARD-001`, rule version 1.0.0, action required: immediate 12-lead ECG and emergency cardiology referral).
+2. **Master Demonstration Runbook & Operational Drills (`docs/DEMO_RUNBOOK.md`)**:
+   - 7-minute golden path demonstration walkthrough: Kiosk Multilingual Intake -> Red-Flag Triage -> Document Upload -> Clinician Consultation Console -> Unified SOAP Generation -> Drug Interaction Verification -> FHIR Bundle Export -> Session Wipe.
+   - 7 practical failure drills with recovery steps:
+     1. Internet Disconnection Drill (Seamless Air-Gapped Local NLP Fallback).
+     2. Gemini API Quota Exhaustion Drill (Zero Fabricated Clinical Facts).
+     3. OCR Image Processing Failure Drill (Deterministic Local Extraction Fallback).
+     4. Speech Recognition (ASR) Microphone Denied Drill (Typing Dictation Fallback).
+     5. SQLite Process Crash & Recovery Drill (ACID WAL Replay & Database Restoration).
+     6. Abandoned Kiosk Patient Reset Drill (In-Flight Draft Fact Purging & Cross-Patient Isolation).
+     7. Cryptographic Tamper Detection Drill (AES-256-GCM Auth Tag Failure & Corrupted Payload Rejection).
+3. **Automated Verification Suite (`src/__tests__/phase15DemoHardening.test.ts`)**:
+   - Built comprehensive automated test suite testing the primary scenario and all failure drill mechanisms.
+   - Total tests passing: **175/175 passing across all 20 test suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 
 
