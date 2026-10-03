@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import crypto from 'node:crypto';
 import { Request, Response, NextFunction } from 'express';
 import Database from 'better-sqlite3';
@@ -23,16 +24,12 @@ const KIOSK_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const CLINICIAN_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 /**
- * Clinician credentials loaded strictly from environment variables.
- * In development/demo, set CLINICIAN_USER and CLINICIAN_PASS in .env.
- * No hardcoded default password literal in source code.
+ * Clinician credentials loaded from environment variables (.env).
+ * Falls back to demo account 'doctor' / 'medscribe2026' if not explicitly configured.
  */
 export function getClinicianCredentials(): { user: string; pass: string } | null {
-  const user = process.env.CLINICIAN_USER;
-  const pass = process.env.CLINICIAN_PASS;
-  if (!user || !pass) {
-    return null;
-  }
+  const user = process.env.CLINICIAN_USER || 'doctor';
+  const pass = process.env.CLINICIAN_PASS || 'medscribe2026';
   return { user, pass };
 }
 

@@ -31,7 +31,7 @@ if not exist "node_modules" (
 )
 
 REM 4. Ensure demo SQLite database is initialized
-if not exist "medscribe.db" (
+if not exist "server\db\medscribe.db" (
     echo [Setup] Initializing SQLite database and seeding demo cases...
     call npm run db:seed
 )
@@ -39,8 +39,7 @@ if not exist "medscribe.db" (
 echo.
 echo ==============================================================================
 echo Starting MedScribeAI in development mode...
-echo   Frontend:  http://localhost:5173
-echo   Backend:   http://localhost:3000
+echo   Web App:   http://localhost:3000
 echo   Clinician: Username: doctor  ^|  Password: medscribe2026
 echo ==============================================================================
 echo.

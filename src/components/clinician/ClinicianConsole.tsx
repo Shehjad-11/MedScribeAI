@@ -17,6 +17,9 @@ import {
   Flower2,
   Sparkles,
   ExternalLink,
+  LogIn,
+  LogOut,
+  Lock,
 } from 'lucide-react';
 
 interface QueueItemSummary {
@@ -49,6 +52,24 @@ export const ClinicianConsole: React.FC<ClinicianConsoleProps> = ({
   onDirectDoctorConsultation,
   clinicianToken = 'mock_clinician_token',
 }) => {
+  const [token, setToken] = useState<string>(() => {
+    if (clinicianToken && clinicianToken !== 'mock_clinician_token') return clinicianToken;
+    return typeof window !== 'undefined' ? sessionStorage.getItem('medscribe_clinician_token') || '' : '';
+  });
+  const [displayName, setDisplayName] = useState<string>(() => {
+    return typeof window !== 'undefined' ? sessionStorage.getItem('medscribe_clinician_name') || 'Dr. Primary Care' : 'Dr. Primary Care';
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (clinicianToken && clinicianToken !== 'mock_clinician_token') return true;
+    return typeof window !== 'undefined' ? !!sessionStorage.getItem('medscribe_clinician_token') : false;
+  });
+
+  // Login form state
+  const [loginUsername, setLoginUsername] = useState('doctor');
+  const [loginPassword, setLoginPassword] = useState('medscribe2026');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
   const [queue, setQueue] = useState<QueueItemSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedCase, setSelectedCase] = useState<ClinicalCase | null>(null);
@@ -57,31 +78,82 @@ export const ClinicianConsole: React.FC<ClinicianConsoleProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const fetchQueue = async () => {
+  const fetchQueue = async (activeToken = token) => {
+    if (!activeToken) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/clinician/queue', {
         headers: {
-          Authorization: `Bearer ${clinicianToken}`,
+          Authorization: `Bearer ${activeToken}`,
         },
       });
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        throw new Error('Session invalid or expired. Please sign in with your clinician credentials.');
+      }
       if (!res.ok) {
         throw new Error(`Queue fetch failed with status ${res.status}`);
       }
       const data = await res.json();
       setQueue(data.queue || []);
+      setIsAuthenticated(true);
     } catch (err: any) {
       console.warn('Queue fetch error:', err.message);
-      setError('Unable to fetch live clinician queue. Using local memory cases.');
+      setError(err.message || 'Unable to fetch live clinician queue.');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchQueue();
-  }, []);
+    if (token) {
+      fetchQueue(token);
+    } else {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('/api/clinician/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid clinician credentials');
+      }
+      setToken(data.token);
+      setDisplayName(data.displayName || 'Dr. Primary Care');
+      setIsAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('medscribe_clinician_token', data.token);
+        sessionStorage.setItem('medscribe_clinician_name', data.displayName || 'Dr. Primary Care');
+      }
+      fetchQueue(data.token);
+    } catch (err: any) {
+      setLoginError(err.message || 'Login failed. Please verify credentials.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken('');
+    setIsAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('medscribe_clinician_token');
+      sessionStorage.removeItem('medscribe_clinician_name');
+    }
+  };
 
   const handleSelectCase = async (caseId: string) => {
     setIsLoadingCase(true);
@@ -89,7 +161,7 @@ export const ClinicianConsole: React.FC<ClinicianConsoleProps> = ({
     try {
       const res = await fetch(`/api/clinician/cases/${caseId}`, {
         headers: {
-          Authorization: `Bearer ${clinicianToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (!res.ok) {
@@ -190,6 +262,117 @@ export const ClinicianConsole: React.FC<ClinicianConsoleProps> = ({
     return matchesSearch && matchesStatus;
   });
 
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full max-w-md mx-auto my-12 px-4" data-testid="clinician-login-card">
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-lg space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-md shadow-blue-500/20">
+              <Stethoscope className="w-7 h-7" />
+            </div>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Clinician Workstation Login</h2>
+            <p className="text-xs text-slate-500">
+              Access the clinical priority queue, review patient intakes, and sign SOAP consultation records
+            </p>
+          </div>
+
+          {/* Demo Credentials Quick Pill */}
+          <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3.5 space-y-2 text-xs">
+            <div className="flex items-center justify-between text-blue-900 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                <span>Demo Account</span>
+              </span>
+              <button
+                type="button"
+                id="btn-autofill-demo-credentials"
+                onClick={() => {
+                  setLoginUsername('doctor');
+                  setLoginPassword('medscribe2026');
+                }}
+                className="text-[11px] text-blue-700 hover:text-blue-900 underline font-bold cursor-pointer"
+              >
+                1-Click Autofill
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-700 bg-white/80 p-2 rounded-xl border border-blue-100">
+              <div>User: <span className="font-bold text-blue-900">doctor</span></div>
+              <div>Pass: <span className="font-bold text-blue-900">medscribe2026</span></div>
+            </div>
+          </div>
+
+          {loginError && (
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 text-xs text-rose-800 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Clinician Username
+              </label>
+              <input
+                type="text"
+                id="input-clinician-username"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                placeholder="e.g. doctor"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Password
+              </label>
+              <input
+                type="password"
+                id="input-clinician-password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                placeholder="••••••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              id="btn-clinician-submit-login"
+              disabled={isLoggingIn}
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isLoggingIn ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In as Medical Officer</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={onDirectDoctorConsultation}
+              className="text-xs text-slate-500 hover:text-slate-800 underline transition-colors"
+            >
+              ← Skip to Direct Doctor Consultation (Offline)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6" data-testid="clinician-console">
       {/* Top Banner & Quick Controls */}
@@ -208,9 +391,23 @@ export const ClinicianConsole: React.FC<ClinicianConsoleProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs text-emerald-800 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>{displayName}</span>
+            <button
+              type="button"
+              id="btn-clinician-logout"
+              onClick={handleLogout}
+              className="ml-2 text-slate-400 hover:text-rose-600 transition-colors p-1"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <button
-            onClick={fetchQueue}
+            onClick={() => fetchQueue(token)}
             disabled={isLoading}
             className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all"
             title="Refresh Queue"
