@@ -219,4 +219,17 @@
 - [x] Comprehensive safety and privacy specification (`docs/SAFETY_AND_PRIVACY.md`) with explicit non-compliance disclaimer
 - [x] Automated test suite in `src/__tests__/phase11SecurityHardening.test.ts` (16/16 passing; all 166/166 passing)
 
+---
+
+## Phase 12: Unified Evaluation Harness & System Verification Report (Completed)
+- [x] Built automated evaluation harness runner (`scripts/runEvaluation.ts`)
+- [x] Evaluated document OCR extraction on synthetic fixtures (2 fixtures, 4 fields, 100% accuracy)
+- [x] Verified Marathi ASR manifest (5 registered samples) and properly flagged `NOT RUN` pending operator audio
+- [x] Verified red-flag evaluation (12 rules, 15 scenarios, 100% pass)
+- [x] Verified curated safety engine (9 rules, Aspirin + Warfarin bleed detection confirmed)
+- [x] Verified AYUSH assessment tally evaluation and marked `PENDING BAMS REVIEW`
+- [x] Generated formal evaluation report (`docs/EVALUATION_REPORT.md`) with sample sizes and zero invented metrics
+- [x] All 166 tests passing across 19 suites with zero regressions
+
+
 

@@ -697,4 +697,26 @@ pm run lint (	sc --noEmit): **0 errors**.
    - Post-change test count: **166 passing across 19 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 12: Unified Evaluation Harness & System Verification Report
+
+### Summary of Implementation & Verification
+1. **Unified Evaluation Harness (`scripts/runEvaluation.ts`)**:
+   - Built automated orchestration harness evaluating all system components: OCR extraction, Marathi ASR gate, deterministic red-flag rules, curated safety engine, and AYUSH Prakriti/Agni scoring.
+   - Strict adherence to Absolute Rule 5: Zero invented metrics. All missing fixtures or pending clinical reviews are explicitly stamped and documented.
+2. **Component Evaluation Results**:
+   - **Document OCR**: Evaluated 2 synthetic fixtures (`eval_rx_001` and `eval_lab_002`) across 4 clinical fields (medication, dosage, test name, lab value) achieving 100% accuracy. Real camera/scanner trials marked `NOT RUN`.
+   - **Marathi ASR Gate**: Checked manifest (`fixtures/audio/marathi_eval/manifest.json`) containing 5 registered test cases. Because audio recordings are operator-supplied and not yet recorded, accurately marked: `NOT RUN — PENDING AUDIO RECORDINGS FROM OPERATOR`.
+   - **Deterministic Red-Flag Rules**: Evaluated all 12 versioned triage rules across 15 test conditions (8 positive, 4 negative, 3 boundary), achieving 100% rule-version coverage and triage priority sorting.
+   - **Curated Safety Engine**: Evaluated 9 primary care interaction rules, validating critical bleeding detection on concurrent Aspirin + Warfarin therapy.
+   - **AYUSH Thin Slice**: Evaluated 5 Prakriti and 3 Agni questions with deterministic tally algorithm, marked `PENDING BAMS REVIEW`.
+3. **Formal Evaluation Report (`docs/EVALUATION_REPORT.md`)**:
+   - Generated comprehensive evaluation report detailing sample sizes, evaluation protocols, exact formulas, and review statuses.
+4. **Automated Verification**:
+   - `scripts/runEvaluation.ts`: Executed cleanly, outputting JSON summary and writing `docs/EVALUATION_REPORT.md`.
+   - Total test suites passing: **166/166 passing across 19 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 

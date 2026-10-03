@@ -225,4 +225,21 @@
   - Total test count passes with zero regressions (166/166).
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 12: Unified Evaluation Harness & System Verification Report (Completed)
+- **Scope:**
+  - Build and execute unified evaluation runner (`scripts/runEvaluation.ts`) evaluating all system subsystems.
+  - Document OCR evaluation: 2 synthetic fixtures evaluated across 4 fields (100% precision/recall).
+  - Document Marathi ASR gate status: 5 registered samples in manifest, marked `NOT RUN` pending physical operator recordings.
+  - Document Red-Flag evaluation: 12 versioned rules across 15 test conditions (100% pass).
+  - Document Safety Engine evaluation: 9 curated primary care rules with critical bleeding detection verified.
+  - Document AYUSH evaluation: 8 classical questions evaluated and stamped `PENDING BAMS REVIEW`.
+  - Author comprehensive formal report (`docs/EVALUATION_REPORT.md`) with explicit sample sizes and zero invented metrics.
+- **Exit Criteria:**
+  - Evaluation runner executes cleanly with zero runtime exceptions.
+  - Total test count passes with zero regressions (166/166).
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 
