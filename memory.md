@@ -406,6 +406,37 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
    - Post-change test count: **56 passing across 9 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 2: Patient Kiosk Shell & Multilingual Foundation
+
+### Summary of Implementation & Verification
+1. **Multilingual Architecture (`src/i18n/`)**:
+   - Added Hindi (`src/i18n/locales/hi.ts`) and Marathi (`src/i18n/locales/mr.ts`) dictionaries, expanding beyond English and Spanish.
+   - Updated `LanguageContext.tsx` with dynamic 4-language support (`en`, `hi`, `mr`, `es`) and HTML `lang` attribute synchronization.
+   - Created `docs/TRANSLATION_STATUS.md` formally ledgering translation verification states and flagging Hindi and Marathi as `NEEDS NATIVE-SPEAKER REVIEW` per Absolute Rule 5.
+2. **Consent & Privacy Gating (`server/routes/kioskRoutes.ts`)**:
+   - Implemented granular consent with 5 separate scopes: `historyStorage`, `voiceProcessing`, `documentScan`, `cloudAi`, and `fhirExport`.
+   - Built Cloud AI Gating endpoint `POST /api/kiosk/ai-gate-check` enforcing strict 403 blocks when either `LOCAL_ONLY_MODE` is enabled on server, kiosk local-only switch is activated, or patient explicitly denies cloud AI consent.
+   - Added visible Cloud-AI indicator badge in UI and kiosk configuration endpoint `GET /api/kiosk/config`.
+3. **Mock ABHA Identification Adapter (`server/routes/kioskRoutes.ts`)**:
+   - Built `POST /api/kiosk/abha/verify` validating 14-digit numeric IDs and PHR addresses (`@abdm`).
+   - Clearly stamped responses with `isMock: true` and disclaimer `MOCK ABHA ADAPTER — SYNTHETIC DATA ONLY (NO REAL ABDM/NHA CONNECTION)` to avoid compliance overclaiming.
+4. **Initial Complaint Stubs Catalog (`src/data/complaintsCatalog.ts`)**:
+   - Structured config for the 10 Tier 1 complaints: Fever, Cough, Chest pain, Abdominal pain, Headache, Breathlessness, Vomiting/diarrhea, Joint pain, Urinary symptoms, Diabetes/hypertension follow-up.
+   - Included clinical categories, risk levels, and multilingual labels across all 4 languages.
+   - Exposed catalog via `GET /api/kiosk/complaints`.
+5. **Touch-First Patient Kiosk Component (`src/components/kiosk/PatientKiosk.tsx`)**:
+   - Touch-first design system with >= 48px touch targets, high contrast, and accessible cards.
+   - 4-step wizard: Identification (ABHA or Walk-In) -> Granular Consent & Local-Only toggle -> Complaint Selection Grid -> Review & Submit.
+   - 3-minute inactivity guardrail with warning modal and auto-wipe for patient isolation.
+6. **Automated Verification (`src/__tests__/phase2KioskShell.test.ts`)**:
+   - 12 comprehensive integration tests covering translation integrity, ABHA validation, invalid ABHA 422 rejection, kiosk config, complaints catalog, cloud AI gate blocking, and 5-scope consent storage.
+   - Pre-change test count: 56 passing across 9 suites.
+   - Post-change test count: **68 passing across 10 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 
 

@@ -84,4 +84,19 @@
   - Total test count passes with zero regressions.
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 2: Patient Kiosk Shell & Multilingual Foundation
+- **Scope:**
+  - Implement 4-language support (English, Hindi, Marathi, Spanish) with `docs/TRANSLATION_STATUS.md` ledgering Hindi/Marathi as `NEEDS NATIVE-SPEAKER REVIEW`.
+  - Build mock ABHA identification adapter (`POST /api/kiosk/abha/verify`) with synthetic profile and demo disclaimer.
+  - Implement granular 5-scope consent with local-only mode flag and server-side cloud AI gate check (`POST /api/kiosk/ai-gate-check`).
+  - Configure catalog of 10 initial complaints with multilingual titles and risk categories (`src/data/complaintsCatalog.ts`).
+  - Build touch-first kiosk interface (`src/components/kiosk/PatientKiosk.tsx`) with >= 48px touch targets and 3-minute inactivity session wipe.
+- **Exit Criteria:**
+  - Kiosk shell integration test suite passes 100% (`phase2KioskShell.test.ts`).
+  - Zero regressions across existing tests.
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 

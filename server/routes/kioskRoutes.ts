@@ -15,10 +15,98 @@ import {
   recordAuditEvent,
 } from '../db/database';
 import { ClinicalCase } from '../../src/types/clinicalCase';
+import { TEN_COMPLAINTS } from '../../src/data/complaintsCatalog';
 
 export function createKioskRouter(getDb: () => Database.Database): Router {
   const router = Router();
   const requireKiosk = createRequireKioskAuth(getDb);
+
+  // 0. Mock ABHA Verification Adapter (Demo Mode Only - No Real ABDM)
+  router.post('/abha/verify', (req, res) => {
+    try {
+      const { abhaId } = req.body;
+      if (!abhaId || typeof abhaId !== 'string') {
+        return res.status(400).json({ error: 'ABHA ID / PHR address is required' });
+      }
+
+      const cleanId = abhaId.trim();
+      const isDigits = cleanId.replace(/[-\s]/g, '').match(/^\d{14}$/);
+      const isPhr = cleanId.includes('@');
+
+      if (!isDigits && !isPhr) {
+        return res.status(422).json({
+          verified: false,
+          error: 'Invalid ABHA format. Expected 14-digit ABHA number (e.g. 91-1234-5678-9012) or ABHA address (e.g. patient@abdm)',
+        });
+      }
+
+      // Generate realistic synthetic profile
+      const syntheticProfile = {
+        abhaNumber: isDigits ? cleanId : '91-5544-3322-1100',
+        abhaAddress: isPhr ? cleanId : 'patient.demo@abdm',
+        name: isPhr && cleanId.toLowerCase().startsWith('rahul') ? 'Rahul Sharma' : 'Ramesh Kumar Patil',
+        gender: 'M',
+        dob: '1974-06-15',
+        age: 52,
+        mobile: 'XXXXXX9821',
+        address: 'Wagholi, Pune, Maharashtra',
+        state: 'Maharashtra',
+        district: 'Pune',
+      };
+
+      res.json({
+        verified: true,
+        isMock: true,
+        disclaimer: 'MOCK ABHA ADAPTER — SYNTHETIC DATA ONLY (NO REAL ABDM/NHA CONNECTION)',
+        profile: syntheticProfile,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Mock ABHA verification failed', details: err.message });
+    }
+  });
+
+  // Kiosk Configuration & Local-Only Mode Status
+  router.get('/config', (_req, res) => {
+    const isLocalOnly = process.env.LOCAL_ONLY_MODE === 'true';
+    res.json({
+      localOnlyMode: isLocalOnly,
+      supportedLanguages: ['en', 'hi', 'mr', 'es'],
+      cloudAiAvailable: !isLocalOnly && !!process.env.GEMINI_API_KEY,
+      offlineEngineAvailable: true,
+      complaintTemplatesCount: TEN_COMPLAINTS.length,
+    });
+  });
+
+  // Ten Complaints Stubs Endpoint
+  router.get('/complaints', (_req, res) => {
+    res.json({
+      complaints: TEN_COMPLAINTS,
+    });
+  });
+
+  // Cloud AI Gating Check (Strictly blocks Cloud AI if local-only is active or patient denied cloudAi consent)
+  router.post('/ai-gate-check', requireKiosk, (req: AuthenticatedRequest, res) => {
+    const localOnlyEnv = process.env.LOCAL_ONLY_MODE === 'true';
+    const clientLocalOnly = req.body.localOnly === true;
+    const consentCloudAi = req.body.consentCloudAi !== false;
+
+    if (localOnlyEnv || clientLocalOnly || !consentCloudAi) {
+      return res.status(403).json({
+        allowed: false,
+        reason: localOnlyEnv
+          ? 'BLOCKED_BY_SERVER_POLICY: Server running in forced LOCAL_ONLY_MODE'
+          : clientLocalOnly
+          ? 'BLOCKED_BY_KIOSK_FLAG: Kiosk local-only privacy flag is active'
+          : 'BLOCKED_BY_PATIENT_CONSENT: Patient explicitly denied cloud AI consent',
+        mode: 'OFFLINE_ONLY',
+      });
+    }
+
+    res.json({
+      allowed: true,
+      mode: 'CLOUD_AI_ALLOWED',
+    });
+  });
 
   // 1. Start a fresh kiosk session (unauthenticated initial step)
   router.post('/session/start', (req, res) => {

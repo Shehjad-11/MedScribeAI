@@ -93,5 +93,20 @@
 - [x] Offline local engine updated for acute coronary syndrome recognition
 - [x] End-to-end integration test (`src/__tests__/phase1_5VerticalSlice.test.ts`) passing all 11 steps
 
+---
+
+## Phase 2: Patient Kiosk Shell & Multilingual Foundation (Completed)
+- [x] Multi-language support (English, Hindi, Marathi, Spanish) in `src/i18n/locales/`
+- [x] Translation status ledger (`docs/TRANSLATION_STATUS.md`) flagging hi and mr as NEEDS NATIVE-SPEAKER REVIEW
+- [x] Mock ABHA verification adapter (`POST /api/kiosk/abha/verify`) with synthetic profile and demo disclaimer
+- [x] Granular consent recording with 5 distinct permission scopes (history, voice, docs, cloud AI, FHIR)
+- [x] Local-only privacy flag and Cloud AI gating check (`POST /api/kiosk/ai-gate-check`)
+- [x] Visible Cloud-AI status indicator in kiosk UI header
+- [x] 10 initial complaint templates catalog (`src/data/complaintsCatalog.ts` and `GET /api/kiosk/complaints`)
+- [x] Touch-first patient kiosk component (`src/components/kiosk/PatientKiosk.tsx`) with >= 48px touch targets
+- [x] Inactivity guardrail timer (3-min threshold with warning modal and auto-wipe)
+- [x] Automated test suite in `src/__tests__/phase2KioskShell.test.ts` (12/12 passing; all 68/68 passing)
+
+
 
 
