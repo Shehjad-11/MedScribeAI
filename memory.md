@@ -747,6 +747,25 @@ pm run lint (	sc --noEmit): **0 errors**.
    - Total test count: **166/166 passing across 19 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 14: Protected Remote Tunnel Specification & Safety Guardrails
+
+### Summary of Implementation & Verification
+1. **Protected Tunnel Architectural Specification (`docs/PROTECTED_TUNNEL_SPEC.md`)**:
+   - Detailed remote demonstration architecture with strict defense-in-depth controls for evaluator access.
+   - Pre-condition requirements: `DEMO_MODE=true`, `SYNTHETIC_DATA_ONLY=true`, and mandatory access token.
+   - Disabling steps defined first: `TUNNEL_ENABLED=false` by default, binding to local loopback.
+   - Zero hosting contact: strictly no external hosting CLI (`gh`, `ngrok`, `cloudflared`) invoked during automated builds or testing.
+2. **Pre-Flight Verification Script (`scripts/tunnelGuide.ts`)**:
+   - Built environment validator checking pre-flight requirements.
+   - Verified safe default: exits cleanly informing operator that tunnel is blocked and disabled by default.
+3. **Automated Verification**:
+   - `npx tsx scripts/tunnelGuide.ts`: Passed with safe blocked default exit.
+   - Total test suites passing: **166/166 passing across 19 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 
 

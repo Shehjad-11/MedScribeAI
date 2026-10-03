@@ -243,6 +243,15 @@
 - [x] Updated `README.md` with step-by-step local execution guide
 - [x] Updated `.env.example` with documented environment keys
 
+---
+
+## Phase 14: Protected Remote Tunnel Specification & Safety Guardrails (Completed)
+- [x] Authored protected tunnel architecture document (`docs/PROTECTED_TUNNEL_SPEC.md`)
+- [x] Implemented pre-flight safety verification script (`scripts/tunnelGuide.ts`)
+- [x] Enforced safe default (tunneling disabled by default; zero external hosting contact)
+- [x] All 166 tests passing across 19 suites with zero regressions
+
+
 
 
 
