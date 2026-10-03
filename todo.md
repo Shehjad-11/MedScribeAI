@@ -160,3 +160,15 @@
 - [x] Automated precision/recall scoring harness (scripts/scoreOcr.ts)
 - [x] OCR evaluation report (docs/audit/OCR_EVAL.md with physical scans marked NOT RUN)
 - [x] Automated test suite in src/__tests__/phase6OcrAndDocuments.test.ts (14/14 passing; all 116/116 passing)
+
+---
+
+## Phase 7: AYUSH Thin Slice (Prakriti & Agni Assessment) (Completed)
+- [x] Config-driven Prakriti and Agni questions (src/data/ayush/prakritiAgniRules.ts) with classical references
+- [x] Visible  PENDING BAMS REVIEW labels and disclaimer across all questions and screens
+- [x] Deterministic tally scoring engine with dosha dominance and Agni type calculation
+- [x] Structured ClinicalFact provenance generation (PATIENT_REPORTED, 	ouch, patient_confirmed, unverified by clinician)
+- [x] Touch-first AYUSH intake component (src/components/kiosk/AyushIntake.tsx)
+- [x] Kiosk API endpoints (GET /api/kiosk/ayush/questions, POST /api/kiosk/ayush/evaluate, POST /api/kiosk/ayush/save)
+- [x] Formal BAMS reviewer review packet (docs/AYUSH_REVIEW_PACKET.md)
+- [x] Automated test suite in src/__tests__/phase7AyushSlice.test.ts (15/15 passing; all 131/131 passing)

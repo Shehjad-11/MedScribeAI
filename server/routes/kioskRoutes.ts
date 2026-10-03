@@ -16,6 +16,14 @@ import {
 } from '../db/database';
 import { ClinicalCase } from '../../src/types/clinicalCase';
 import { TEN_COMPLAINTS } from '../../src/data/complaintsCatalog';
+import {
+  PRAKRITI_QUESTIONS,
+  AGNI_QUESTIONS,
+  evaluateAyushAssessment,
+  buildAyushClinicalFacts,
+  AYUSH_REVIEW_STATUS,
+  AYUSH_DISCLAIMER,
+} from '../../src/data/ayush/prakritiAgniRules';
 
 export function createKioskRouter(getDb: () => Database.Database): Router {
   const router = Router();
@@ -82,6 +90,77 @@ export function createKioskRouter(getDb: () => Database.Database): Router {
     res.json({
       complaints: TEN_COMPLAINTS,
     });
+  });
+
+  // AYUSH Questions Endpoint (Thin Slice: Prakriti & Agni)
+  router.get('/ayush/questions', (_req, res) => {
+    res.json({
+      reviewStatus: AYUSH_REVIEW_STATUS,
+      disclaimer: AYUSH_DISCLAIMER,
+      prakriti: PRAKRITI_QUESTIONS,
+      agni: AGNI_QUESTIONS,
+    });
+  });
+
+  // AYUSH Deterministic Evaluation Endpoint
+  router.post('/ayush/evaluate', (req, res) => {
+    try {
+      const responses = req.body.responses || {};
+      const scoreResult = evaluateAyushAssessment(responses);
+      res.json(scoreResult);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to evaluate AYUSH assessment', details: err.message });
+    }
+  });
+
+  // Save AYUSH Assessment onto Active Clinical Case
+  router.post('/ayush/save', requireKiosk, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const activeCaseId = req.kioskSession!.active_case_id;
+      if (!activeCaseId) {
+        return res.status(404).json({ error: 'No active clinical case for this session' });
+      }
+
+      const clinicalCase = getClinicalCase(db, activeCaseId);
+      if (!clinicalCase) {
+        return res.status(404).json({ error: 'Active case not found in database' });
+      }
+
+      const responses = req.body.responses || {};
+      const scoreResult = evaluateAyushAssessment(responses);
+      const ayushAssessment = buildAyushClinicalFacts(scoreResult, true);
+
+      clinicalCase.intake.ayushAssessment = ayushAssessment;
+      clinicalCase.updatedAt = new Date().toISOString();
+
+      saveClinicalCase(db, clinicalCase);
+
+      recordAuditEvent(db, {
+        caseId: activeCaseId,
+        actorType: 'patient',
+        actorId: req.kioskSession!.token,
+        action: 'AYUSH_ASSESSMENT_RECORDED',
+        details: {
+          prakriti: scoreResult.prakriti.dominantDosha,
+          agni: scoreResult.agni.primaryAgni,
+          reviewStatus: AYUSH_REVIEW_STATUS,
+        },
+      });
+
+      res.json({
+        success: true,
+        caseId: activeCaseId,
+        reviewStatus: AYUSH_REVIEW_STATUS,
+        ayushAssessment,
+        summary: {
+          dominantDosha: scoreResult.prakriti.dominantDosha,
+          primaryAgni: scoreResult.agni.primaryAgni,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save AYUSH assessment', details: err.message });
+    }
   });
 
   // Cloud AI Gating Check (Strictly blocks Cloud AI if local-only is active or patient denied cloudAi consent)

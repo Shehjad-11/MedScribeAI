@@ -562,3 +562,31 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
    - Post-change test count: **116 passing across 14 suites (0 regressions)**.
    - 
 pm run lint (	sc --noEmit): **0 errors**.
+
+---
+
+## Session Log: 2026-10-03 — Phase 7: AYUSH Thin Slice (Prakriti & Agni Assessment)
+
+### Summary of Implementation & Verification
+1. **Prakriti & Agni Rules Configuration (src/data/ayush/prakritiAgniRules.ts)**:
+   - Implemented 5 Sharira Prakriti questions (Body frame, Skin & hair, Weather sensitivity, Temperament & stress reaction, Sleep pattern) per Charaka Samhita Vimana 8 and Ashtanga Hridaya Sutra 1.
+   - Implemented 3 Jatharagni questions (Appetite regularity, Post-meal sensation, Bowel habits/evacuation) per Charaka Chikitsa 15 and Charaka Sutra 11.
+   - Every single question, option, score, and screen strictly carries eviewStatus: 'PENDING BAMS REVIEW'.
+   - Prominent disclaimer attached: unvalidated prototype for clinician review only, zero autonomous prescribing.
+2. **Deterministic Tally Scoring Engine (src/data/ayush/prakritiAgniRules.ts)**:
+   - Transparent, verifiable counting logic calculating dominant dosha (Vata, Pitta, Kapha, Dvandvaja dual-dosha, or Sama Tridoshic balanced) and Agni type (Vishama, Tikshna, Manda, or Sama).
+   - Generates structured AyushAssessment with clinical provenance (source: 'PATIENT_REPORTED', method: 'touch', erificationState: 'patient_confirmed', erifiedBy: undefined).
+3. **BAMS Review Packet (docs/AYUSH_REVIEW_PACKET.md)**:
+   - Created comprehensive clinician packet detailing questions, classical Brihat Trayi references, scoring specification, and an attestation/sign-off sheet for an external BAMS/MD (Ayurveda) practitioner.
+4. **Touch-First Kiosk Component (src/components/kiosk/AyushIntake.tsx)**:
+   - Built touch-first module with >= 48px targets, visible [PENDING BAMS REVIEW] banner and badges, progress indicator, and multilingual localization (en, hi, mr).
+5. **Kiosk HTTP Endpoints (server/routes/kioskRoutes.ts)**:
+   - GET /api/kiosk/ayush/questions: Returns questions with disclaimer and review status.
+   - POST /api/kiosk/ayush/evaluate: Deterministic tally calculation.
+   - POST /api/kiosk/ayush/save: Saves yushAssessment to active ClinicalCase in SQLite and logs audit event AYUSH_ASSESSMENT_RECORDED.
+6. **Automated Verification (src/__tests__/phase7AyushSlice.test.ts)**:
+   - 15 comprehensive unit and HTTP integration tests covering question invariants, scoring rules, edge cases, provenance records, and SQLite persistence.
+   - Pre-change test count: 116 passing across 14 suites.
+   - Post-change test count: **131 passing across 15 suites (0 regressions)**.
+   - 
+pm run lint (	sc --noEmit): **0 errors**.

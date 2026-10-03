@@ -156,3 +156,17 @@
   - Document & OCR test suite passes 100% (phase6OcrAndDocuments.test.ts).
   - Total test count passes with zero regressions.
   - Clean TypeScript compilation (	sc --noEmit).
+
+---
+
+## Phase 7: AYUSH Thin Slice (Prakriti & Agni Assessment)
+- **Scope:**
+  - Build config-driven assessment rules for 5 Prakriti and 3 Agni questions (src/data/ayush/prakritiAgniRules.ts).
+  - Enforce mandatory PENDING BAMS REVIEW tags and disclaimers on every question, option, score, and screen.
+  - Implement deterministic tally scoring logic and clinical provenance generator.
+  - Author formal clinical review document for BAMS review (docs/AYUSH_REVIEW_PACKET.md).
+  - Integrate touch-first intake module (src/components/kiosk/AyushIntake.tsx) and server endpoints.
+- **Exit Criteria:**
+  - AYUSH unit and integration test suite passes 100% (phase7AyushSlice.test.ts).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (	sc --noEmit).
