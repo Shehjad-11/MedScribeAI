@@ -24,19 +24,39 @@ export interface DbAuditEvent {
 
 let dbInstance: Database.Database | null = null;
 
+export function closeDatabase(): void {
+  if (dbInstance) {
+    try {
+      dbInstance.close();
+    } catch {
+      // ignore
+    }
+    dbInstance = null;
+  }
+}
+
+export function setDatabaseInstance(db: Database.Database | null): void {
+  dbInstance = db;
+}
+
 export function getDatabase(dbPath?: string): Database.Database {
   if (dbInstance) {
     return dbInstance;
   }
 
   const resolvedPath = dbPath || process.env.MEDSCRIBE_DB_PATH || path.join(process.cwd(), 'server', 'db', 'medscribe.db');
-  const dir = path.dirname(resolvedPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  
+  if (resolvedPath !== ':memory:') {
+    const dir = path.dirname(resolvedPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 
   const db = new Database(resolvedPath);
-  db.pragma('journal_mode = WAL');
+  if (resolvedPath !== ':memory:') {
+    db.pragma('journal_mode = WAL');
+  }
   db.pragma('foreign_keys = ON');
 
   // Load and execute schema
@@ -56,6 +76,7 @@ export function getDatabase(dbPath?: string): Database.Database {
   dbInstance = db;
   return db;
 }
+
 
 export function resetDatabaseForTesting(db: Database.Database): void {
   db.exec(`
@@ -316,6 +337,12 @@ export function updateCaseStatus(
   existing.updatedAt = new Date().toISOString();
   saveClinicalCase(db, existing);
 }
+
+export function deleteClinicalCase(db: Database.Database, caseId: string): void {
+  const stmt = db.prepare(`DELETE FROM clinical_cases WHERE id = ?`);
+  stmt.run(caseId);
+}
+
 
 /* =========================================================================
    4. AUDIT EVENTS

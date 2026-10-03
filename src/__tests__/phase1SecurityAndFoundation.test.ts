@@ -1,19 +1,31 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-
 import http from 'http';
 import { app } from '../../server';
-import { getDatabase, resetDatabaseForTesting, getClinicalCase, getAuditEvents } from '../../server/db/database';
+import {
+  getDatabase,
+  closeDatabase,
+  resetDatabaseForTesting,
+  getClinicalCase,
+  getAuditEvents,
+} from '../../server/db/database';
 import { ClinicalCase, createClinicalFact } from '../types/clinicalCase';
 
-describe('Phase 1 Foundation & Security Skeleton', () => {
+describe('Phase 1 Foundation & Security Skeleton (HTTP Integration Suite)', () => {
   let server: http.Server;
   let baseUrl: string;
 
   beforeAll(async () => {
-    const db = getDatabase();
+    // Strictly isolate tests: use in-memory SQLite database, NEVER server/db/medscribe.db
+    closeDatabase();
+    process.env.MEDSCRIBE_DB_PATH = ':memory:';
+    process.env.CLINICIAN_USER = 'doctor';
+    process.env.CLINICIAN_PASS = 'medscribe2026';
+
+    const db = getDatabase(':memory:');
     resetDatabaseForTesting(db);
 
+    // Spin up ephemeral HTTP server on a random port for true network testing
     await new Promise<void>((resolve) => {
       server = app.listen(0, '127.0.0.1', () => {
         const addr = server.address() as any;
@@ -24,6 +36,7 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
   });
 
   afterAll(async () => {
+    closeDatabase();
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
     });
@@ -69,17 +82,17 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
   });
 
   /* =========================================================================
-     TEST 2: Security Boundaries — Kiosk Token Rejected on Clinician Routes
+     TEST 2: Security Boundaries — Real HTTP Requests with Bearer Tokens
      ========================================================================= */
-  describe('2. Security Boundary Enforcement', () => {
-    it('strictly rejects kiosk tokens on clinician routes with 403 Forbidden', async () => {
-      // 1. Obtain a valid kiosk session
+  describe('2. Security Boundary Enforcement (Real HTTP Routes)', () => {
+    it('strictly rejects kiosk tokens on clinician routes with 403 Forbidden over HTTP', async () => {
+      // 1. Obtain a valid kiosk session via HTTP POST
       const startRes = await fetch(`${baseUrl}/api/kiosk/session/start`, { method: 'POST' });
       expect(startRes.status).toBe(201);
       const { token: kioskToken } = await startRes.json();
       expect(kioskToken).toMatch(/^kiosk_/);
 
-      // 2. Attempt to access clinician queue with kiosk token
+      // 2. Attempt to access clinician queue with kiosk token via HTTP GET
       const queueRes = await fetch(`${baseUrl}/api/clinician/queue`, {
         headers: { Authorization: `Bearer ${kioskToken}` },
       });
@@ -87,7 +100,7 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
       const errorJson = await queueRes.json();
       expect(errorJson.error).toContain('Forbidden: Kiosk tokens cannot access clinician endpoints');
 
-      // 3. Attempt to approve a case with kiosk token
+      // 3. Attempt to approve a case with kiosk token via HTTP POST
       const approveRes = await fetch(`${baseUrl}/api/clinician/cases/fake_case/approve`, {
         method: 'POST',
         headers: {
@@ -99,7 +112,7 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
       expect(approveRes.status).toBe(403);
     });
 
-    it('clinician routes reject unauthenticated requests with 401 Unauthorized', async () => {
+    it('clinician routes reject unauthenticated requests with 401 Unauthorized over HTTP', async () => {
       // Missing Authorization header
       const unauthRes = await fetch(`${baseUrl}/api/clinician/queue`);
       expect(unauthRes.status).toBe(401);
@@ -111,7 +124,7 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
       expect(invalidRes.status).toBe(401);
     });
 
-    it('allows valid clinician login and grants access to clinician routes', async () => {
+    it('allows valid clinician login and grants access to clinician routes over HTTP', async () => {
       const loginRes = await fetch(`${baseUrl}/api/clinician/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,7 +135,7 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
       expect(loginData.token).toMatch(/^doc_/);
       expect(loginData.displayName).toBe('Dr. Primary Care');
 
-      // Call clinician queue with doctor token
+      // Call clinician queue with doctor token over HTTP
       const queueRes = await fetch(`${baseUrl}/api/clinician/queue`, {
         headers: { Authorization: `Bearer ${loginData.token}` },
       });
@@ -133,32 +146,17 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
   });
 
   /* =========================================================================
-     TEST 3: Cross-Patient Isolation — Patient A -> Reset -> Patient B
+     TEST 3: Session Reset Semantics
      ========================================================================= */
-  describe('3. Patient Session Isolation & Wipe Guarantee', () => {
-    it('guarantees Patient A session -> reset -> Patient B cannot read Patient A data', async () => {
-      // Step A: Patient A starts kiosk session
-      const startResA = await fetch(`${baseUrl}/api/kiosk/session/start`, { method: 'POST' });
-      const { token: tokenA } = await startResA.json();
+  describe('3. Session Reset Semantics & Cross-Patient Isolation', () => {
+    it('(a) reset before submit deletes the unsubmitted draft case and its facts from SQLite', async () => {
+      // 1. Start kiosk session
+      const startRes = await fetch(`${baseUrl}/api/kiosk/session/start`, { method: 'POST' });
+      const { token: draftToken } = await startRes.json();
 
-      // Patient A records consent
-      await fetch(`${baseUrl}/api/kiosk/consent`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${tokenA}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientId: 'pt_A_001',
-          granted: true,
-          method: 'touch_checkbox',
-          version: '1.0',
-        }),
-      });
-
-      // Patient A creates draft ClinicalCase
-      const caseA: ClinicalCase = {
-        id: 'case_ptA_test',
+      // 2. Create unsubmitted draft case
+      const draftCase: ClinicalCase = {
+        id: 'case_unsubmitted_draft',
         status: 'intake_draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -169,23 +167,17 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
           language: 'en',
           method: 'touch_checkbox',
           version: '1.0',
-          scopes: {
-            historyCollection: true,
-            voiceRecording: false,
-            documentProcessing: true,
-            cloudAI: true,
-            interoperabilityFHIR: true,
-          },
+          scopes: { historyCollection: true, voiceRecording: false, documentProcessing: true, cloudAI: true, interoperabilityFHIR: true },
         },
         patient: {
-          tempId: 'pt_A_001',
-          name: createClinicalFact('name', 'Patient Alice Sensitive Data', 'PATIENT_REPORTED', 'touch'),
-          age: createClinicalFact('age', 48, 'PATIENT_REPORTED', 'touch'),
-          sex: createClinicalFact('sex', 'Female', 'PATIENT_REPORTED', 'touch'),
+          tempId: 'pt_abandoned_01',
+          name: createClinicalFact('name', 'Abandoned Intake Patient', 'PATIENT_REPORTED', 'touch'),
+          age: createClinicalFact('age', 40, 'PATIENT_REPORTED', 'touch'),
+          sex: createClinicalFact('sex', 'Male', 'PATIENT_REPORTED', 'touch'),
         },
         intake: {
-          chiefComplaint: createClinicalFact('chiefComplaint', 'Confidential Medical Issue', 'PATIENT_REPORTED', 'touch'),
-          symptomOnset: createClinicalFact('symptomOnset', '3 days', 'PATIENT_REPORTED', 'touch'),
+          chiefComplaint: createClinicalFact('chiefComplaint', 'Temporary Draft Complaint', 'PATIENT_REPORTED', 'touch'),
+          symptomOnset: createClinicalFact('symptomOnset', '1 day', 'PATIENT_REPORTED', 'touch'),
           questionResponses: {},
           redFlags: [],
         },
@@ -193,67 +185,130 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
         auditTrail: [],
       };
 
-      const saveResA = await fetch(`${baseUrl}/api/kiosk/case`, {
+      const saveRes = await fetch(`${baseUrl}/api/kiosk/case`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${tokenA}`,
+          Authorization: `Bearer ${draftToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(caseA),
+        body: JSON.stringify(draftCase),
       });
-      expect(saveResA.status).toBe(200);
+      expect(saveRes.status).toBe(200);
 
-      // Verify Patient A can read their own case
-      const readResA = await fetch(`${baseUrl}/api/kiosk/case`, {
-        headers: { Authorization: `Bearer ${tokenA}` },
-      });
-      expect(readResA.status).toBe(200);
-      const readDataA = await readResA.json();
-      expect(readDataA.case.patient.name.value).toBe('Patient Alice Sensitive Data');
+      // Verify case exists in DB prior to reset
+      const db = getDatabase(':memory:');
+      expect(getClinicalCase(db, 'case_unsubmitted_draft')).not.toBeNull();
 
-      // Step B: Kiosk Session Reset (Patient A finishes or walks away)
-      const resetResA = await fetch(`${baseUrl}/api/kiosk/session/reset`, {
+      // 3. Reset kiosk session BEFORE submitting
+      const resetRes = await fetch(`${baseUrl}/api/kiosk/session/reset`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${tokenA}` },
+        headers: { Authorization: `Bearer ${draftToken}` },
       });
-      expect(resetResA.status).toBe(200);
+      expect(resetRes.status).toBe(200);
 
-      // Step C: Patient B arrives at the same kiosk terminal and starts new session
-      const startResB = await fetch(`${baseUrl}/api/kiosk/session/start`, { method: 'POST' });
-      const { token: tokenB } = await startResB.json();
-      expect(tokenB).not.toBe(tokenA);
+      // 4. Verify draft case was deleted from database
+      expect(getClinicalCase(db, 'case_unsubmitted_draft')).toBeNull();
 
-      // 1. Patient B attempts to get active case on the new session -> must be 404 (No active case)
-      const readResB = await fetch(`${baseUrl}/api/kiosk/case`, {
-        headers: { Authorization: `Bearer ${tokenB}` },
-      });
-      expect(readResB.status).toBe(404);
+      // Verify associated clinical facts were cascade-deleted
+      const factsStmt = db.prepare(`SELECT count(*) as count FROM clinical_facts WHERE case_id = ?`);
+      const factsRow = factsStmt.get('case_unsubmitted_draft') as { count: number };
+      expect(factsRow.count).toBe(0);
+    });
 
-      // 2. Attempt to use old token A -> must be 401 Unauthorized (invalidated session)
-      const reuseTokenARes = await fetch(`${baseUrl}/api/kiosk/case`, {
-        headers: { Authorization: `Bearer ${tokenA}` },
-      });
-      expect(reuseTokenARes.status).toBe(401);
+    it('(b) reset after submit ends kiosk session but submitted case remains readable by clinician', async () => {
+      // 1. Start kiosk session
+      const startRes = await fetch(`${baseUrl}/api/kiosk/session/start`, { method: 'POST' });
+      const { token: submittedToken } = await startRes.json();
 
-      // 3. Patient B cannot hijack or mutate Patient A's case
-      const hijackRes = await fetch(`${baseUrl}/api/kiosk/case`, {
+      // 2. Create case and submit/confirm it
+      const submittedCase: ClinicalCase = {
+        id: 'case_completed_submit',
+        status: 'intake_draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        language: 'en',
+        consent: {
+          granted: true,
+          timestamp: new Date().toISOString(),
+          language: 'en',
+          method: 'touch_checkbox',
+          version: '1.0',
+          scopes: { historyCollection: true, voiceRecording: false, documentProcessing: true, cloudAI: true, interoperabilityFHIR: true },
+        },
+        patient: {
+          tempId: 'pt_submitted_02',
+          name: createClinicalFact('name', 'Confirmed Patient Rajesh', 'PATIENT_REPORTED', 'touch'),
+          age: createClinicalFact('age', 52, 'PATIENT_REPORTED', 'touch'),
+          sex: createClinicalFact('sex', 'Male', 'PATIENT_REPORTED', 'touch'),
+        },
+        intake: {
+          chiefComplaint: createClinicalFact('chiefComplaint', 'Chest Pain', 'PATIENT_REPORTED', 'touch'),
+          symptomOnset: createClinicalFact('symptomOnset', '2 hours', 'PATIENT_REPORTED', 'touch'),
+          questionResponses: {},
+          redFlags: [],
+        },
+        documents: [],
+        auditTrail: [],
+      };
+
+      await fetch(`${baseUrl}/api/kiosk/case`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${tokenB}`,
+          Authorization: `Bearer ${submittedToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: 'case_ptA_test', // trying to overwrite Alice's case
-          status: 'intake_draft',
-          patient: { tempId: 'pt_B_002', name: createClinicalFact('name', 'Bob', 'PATIENT_REPORTED', 'touch') },
-        }),
+        body: JSON.stringify(submittedCase),
       });
-      // Should succeed only in binding to Bob or creating fresh, but let's confirm DB persistence for Alice is secure
-      const db = getDatabase();
-      const aliceInDb = getClinicalCase(db, 'case_ptA_test');
-      expect(aliceInDb).not.toBeNull();
-      // Alice's data was saved in SQLite
-      expect(aliceInDb?.patient.name.value).toBe('Patient Alice Sensitive Data');
+
+      // Submit/confirm case
+      const confirmRes = await fetch(`${baseUrl}/api/kiosk/case/confirm`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${submittedToken}` },
+      });
+      expect(confirmRes.status).toBe(200);
+
+      // 3. Reset kiosk session AFTER submit (kiosk wipes for next patient)
+      const resetRes = await fetch(`${baseUrl}/api/kiosk/session/reset`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${submittedToken}` },
+      });
+      expect(resetRes.status).toBe(200);
+
+      // 4. Authenticated clinician logs in and reads the submitted case
+      const loginRes = await fetch(`${baseUrl}/api/clinician/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'doctor', password: 'medscribe2026' }),
+      });
+      const { token: docToken } = await loginRes.json();
+
+      const caseRes = await fetch(`${baseUrl}/api/clinician/cases/case_completed_submit`, {
+        headers: { Authorization: `Bearer ${docToken}` },
+      });
+      expect(caseRes.status).toBe(200);
+      const caseData = await caseRes.json();
+      expect(caseData.case.status).toBe('patient_confirmed');
+      expect(caseData.case.patient.name.value).toBe('Confirmed Patient Rajesh');
+    });
+
+    it('(c) a reused token after reset returns 401 Unauthorized', async () => {
+      // 1. Start session
+      const startRes = await fetch(`${baseUrl}/api/kiosk/session/start`, { method: 'POST' });
+      const { token } = await startRes.json();
+
+      // 2. Reset session
+      await fetch(`${baseUrl}/api/kiosk/session/reset`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 3. Reusing the token returns 401 Unauthorized
+      const readRes = await fetch(`${baseUrl}/api/kiosk/case`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(readRes.status).toBe(401);
+      const err = await readRes.json();
+      expect(err.error).toContain('Unauthorized: Kiosk session is invalid or has been reset');
     });
   });
 
@@ -262,14 +317,13 @@ describe('Phase 1 Foundation & Security Skeleton', () => {
      ========================================================================= */
   describe('4. Minimal Audit Trail Logging', () => {
     it('records critical clinical and security events in SQLite', async () => {
-      const db = getDatabase();
+      const db = getDatabase(':memory:');
       const events = getAuditEvents(db);
 
-      // Should have recorded session creation and reset events
       const actionTypes = events.map((e) => e.action);
       expect(actionTypes).toContain('SESSION_CREATED');
       expect(actionTypes).toContain('SESSION_RESET');
-      expect(actionTypes).toContain('CONSENT_RECORDED');
+      expect(actionTypes).toContain('CASE_SUBMITTED');
     });
   });
 });

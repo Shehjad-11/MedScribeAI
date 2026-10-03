@@ -350,12 +350,33 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
 4. **Documentation & Client API**:
    - Documented full API contracts in `docs/API_SPEC.md`.
    - Built typed client API client in `src/services/api.ts`.
-5. **UI Polish**:
-   - Enhanced workstation Header with "SQLite Isolated" security badge.
+5. **UI & Code Scope Control**:
+   - Reverted `Header.tsx` to maintain exact baseline and avoid unverified claims.
 6. **Automated Verification**:
-   - Created `src/__tests__/phase1SecurityAndFoundation.test.ts` with 7 comprehensive integration tests.
+   - Created `src/__tests__/phase1SecurityAndFoundation.test.ts` with 9 comprehensive HTTP integration tests against in-memory SQLite.
    - Pre-change test count: 46 passing across 7 suites.
-   - Post-change test count: **53 passing across 8 suites (46 existing + 7 new, 0 regressions)**.
+   - Post-change test count: **55 passing across 8 suites (46 existing + 9 new, 0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+---
+
+## Session Log: 2026-10-03 — Phase 1 Review & Hardening (Prompt Before 1.5)
+
+### Actions Taken & Verified
+1. **Tracked Files Audit (`git ls-files`)**: Confirmed no `.db`, `-wal`, `-shm`, or `.env` files are tracked in git (only `.env.example` is tracked).
+2. **Clinician Credentials Hardening**: Removed hardcoded password literals from `server/security/auth.ts`. Credentials are now loaded strictly via `process.env.CLINICIAN_USER` and `process.env.CLINICIAN_PASS`, documented in `.env.example` with a clear DEMO ACCOUNT label.
+3. **UI Scope Creep Reversion**: Reverted `src/components/Header.tsx` to remove the unverified "SQLite Isolated" badge, ensuring UI exactly matches the clean baseline.
+4. **HTTP Network Testing Verification**: Confirmed all integration tests in `src/__tests__/phase1SecurityAndFoundation.test.ts` execute real HTTP requests over the wire (`fetch(baseUrl + '/api/...')`) against a running Express test server on an ephemeral TCP port.
+5. **In-Memory Test Database**: Enforced `process.env.MEDSCRIBE_DB_PATH = ':memory:'` and `getDatabase(':memory:')` in `phase1SecurityAndFoundation.test.ts` and added `closeDatabase()` to completely isolate tests and prevent polluting `server/db/medscribe.db`.
+6. **Session Reset Semantics Tested**:
+   - Added test (a): Reset before submit deletes the unsubmitted draft case and all associated clinical facts from SQLite.
+   - Added test (b): Reset after submit ends the kiosk session but the submitted case remains persisted and readable by an authenticated clinician.
+   - Added test (c): Reusing any token after reset returns 401 Unauthorized.
+7. **Legacy Endpoint Safety**: Retained `/api/medscribe/generate` unauthenticated to preserve existing UI and tests; logged `RSK-11` in `docs/audit/RISK_REGISTER.md` as High Severity for Phase 1.5/8 remediation.
+8. **Final Code File Count Against Budget**: Exactly 9 code files touched/created in Phase 1 (under the <= 10 limit).
+9. **Automated Verification**:
+   - `npm test`: **55 passing across 8 suites (46 existing + 9 Phase 1 integration tests, 0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
 
 

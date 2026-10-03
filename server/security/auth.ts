@@ -7,8 +7,11 @@ import {
   invalidateSession,
   updateSessionCase,
   recordAuditEvent,
+  getClinicalCase,
+  deleteClinicalCase,
   DbSession,
 } from '../db/database';
+
 
 export interface AuthenticatedRequest extends Request {
   kioskSession?: DbSession;
@@ -19,8 +22,20 @@ export interface AuthenticatedRequest extends Request {
 const KIOSK_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const CLINICIAN_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
-export const DEMO_CLINICIAN_USER = process.env.CLINICIAN_USER || 'doctor';
-export const DEMO_CLINICIAN_PASS = process.env.CLINICIAN_PASS || 'medscribe2026';
+/**
+ * Clinician credentials loaded strictly from environment variables.
+ * In development/demo, set CLINICIAN_USER and CLINICIAN_PASS in .env.
+ * No hardcoded default password literal in source code.
+ */
+export function getClinicianCredentials(): { user: string; pass: string } | null {
+  const user = process.env.CLINICIAN_USER;
+  const pass = process.env.CLINICIAN_PASS;
+  if (!user || !pass) {
+    return null;
+  }
+  return { user, pass };
+}
+
 
 /**
  * Generates a cryptographically random session token
@@ -54,20 +69,34 @@ export function startKioskSession(db: Database.Database): { token: string; expir
 }
 
 /**
- * Invalidates and resets a kiosk session immediately
+ * Invalidates and resets a kiosk session immediately.
+ * Reset Semantics:
+ * (a) Reset before submit deletes the unsubmitted draft case and all its facts.
+ * (b) Reset after submit ends the kiosk session but the submitted case remains for the doctor.
+ * (c) Token is invalidated; subsequent use returns 401.
  */
 export function resetKioskSession(db: Database.Database, token: string): void {
   const session = getSession(db, token);
+  const activeCaseId = session?.active_case_id;
+
+  if (activeCaseId) {
+    const existingCase = getClinicalCase(db, activeCaseId);
+    if (existingCase && existingCase.status === 'intake_draft') {
+      deleteClinicalCase(db, activeCaseId);
+    }
+  }
+
   invalidateSession(db, token);
 
   recordAuditEvent(db, {
-    caseId: session?.active_case_id || null,
+    caseId: activeCaseId || null,
     actorType: 'kiosk',
     actorId: token,
     action: 'SESSION_RESET',
-    details: { previousCaseId: session?.active_case_id },
+    details: { previousCaseId: activeCaseId },
   });
 }
+
 
 /**
  * Authenticates a clinician and creates a clinician session
@@ -77,9 +106,11 @@ export function loginClinician(
   username: string,
   pass: string
 ): { token: string; expiresAt: string; displayName: string } | null {
-  if (username !== DEMO_CLINICIAN_USER || pass !== DEMO_CLINICIAN_PASS) {
+  const creds = getClinicianCredentials();
+  if (!creds || username !== creds.user || pass !== creds.pass) {
     return null;
   }
+
 
   const token = generateToken('doc');
   const expiresAt = new Date(Date.now() + CLINICIAN_TTL_MS).toISOString();

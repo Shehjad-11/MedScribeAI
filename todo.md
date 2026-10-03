@@ -80,5 +80,7 @@
 - [x] Minimal audit events recorded in SQLite (`SESSION_CREATED`, `SESSION_RESET`, `CONSENT_RECORDED`, `CASE_SUBMITTED`, `CLINICIAN_APPROVAL`, `FHIR_EXPORT`)
 - [x] API contract documentation in `docs/API_SPEC.md`
 - [x] Client API service module in `src/services/api.ts`
-- [x] Automated test suite in `src/__tests__/phase1SecurityAndFoundation.test.ts` (7/7 tests passing; all 53/53 test suite passing)
+- [x] Automated test suite in `src/__tests__/phase1SecurityAndFoundation.test.ts` (9/9 tests passing; all 55/55 test suite passing)
+- [x] Phase 1 Review & Hardening completed: removed hardcoded credentials, reverted UI badge, isolated test DB to in-memory, tested full reset semantics (delete unsubmitted, preserve submitted, 401 on reuse), logged RSK-11 in Risk Register.
+
 
