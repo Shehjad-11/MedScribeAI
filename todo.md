@@ -148,3 +148,15 @@
 
 
 
+
+---
+
+## Phase 6: Medical Document Upload, Layered OCR Adapters & Timeline (Completed)
+- [x] Document upload validation (MIME types, 10MB limit, 200x200 min resolution)
+- [x] Document classification (Prescription, Lab Report, Discharge Summary, Unknown)
+- [x] Layered OCR architecture (Gemini Vision with consent gate, Local OCR fallback, Manual entry)
+- [x] Deterministic abnormal lab value evaluator (Blood sugar, Hemoglobin, Creatinine, Platelet count)
+- [x] Synthetic OCR evaluation fixtures (ixtures/documents/eval/eval_fixtures.json)
+- [x] Automated precision/recall scoring harness (scripts/scoreOcr.ts)
+- [x] OCR evaluation report (docs/audit/OCR_EVAL.md with physical scans marked NOT RUN)
+- [x] Automated test suite in src/__tests__/phase6OcrAndDocuments.test.ts (14/14 passing; all 116/116 passing)

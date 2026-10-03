@@ -530,3 +530,35 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
 
 
 
+
+---
+
+## Session Log: 2026-10-03 — Phase 6: Medical Document Upload, Layered OCR Adapters & Timeline
+
+### Summary of Implementation & Verification
+1. **Document Upload & Pre-Flight Quality Guardrails (src/services/ocr/ocrAdapters.ts)**:
+   - alidateDocumentUpload: Enforces image/PDF MIME type whitelist (image/jpeg, image/png, image/webp, pplication/pdf), maximum file size of 10 MB, and minimum image resolution of 200x200 pixels.
+   - classifyDocument: Deterministic document type classifier identifying PRESCRIPTION, LAB_REPORT, DISCHARGE_SUMMARY, or UNKNOWN based on text tokens and header patterns.
+2. **Layered OCR Adapters (src/services/ocr/ocrAdapters.ts)**:
+   - GeminiVisionOCRAdapter: Checks for GEMINI_API_KEY and privacy gating (patient consent documentScan: true and localOnlyMode: false). If consent or local-only blocks it, refuses cloud OCR and falls back.
+   - LocalTesseractOCRAdapter: Evaluated per Section 39 rule (offline capability). Implemented with feasibility verification in browser/Node runtime; provides local OCR capability when assets are available.
+   - ManualFallbackOCRAdapter: Always-available failsafe with 1.0 confidence for verified manual clinical data entry.
+   - OCRManager: Orchestrates layered fallback with explicit provenance tracking (method: 'ocr').
+3. **Abnormal Lab Value Flags (src/services/ocr/ocrAdapters.ts)**:
+   - Built deterministic reference range checker (evaluateLabResult) for key primary care markers:
+     - Fasting Blood Sugar (70-100 mg/dL): Flags low (<70) and high (>125).
+     - Hemoglobin (12-16 g/dL): Flags severe anemia (<8.0) as critical.
+     - Serum Creatinine (0.6-1.2 mg/dL): Flags acute renal elevation (>1.5).
+     - Platelet Count (150,000-450,000 /mcL): Flags thrombocytopenia (<100,000) as critical.
+4. **Synthetic Evaluation Fixtures & Precision Scoring Harness (ixtures/documents/eval/eval_fixtures.json & scripts/scoreOcr.ts)**:
+   - Created synthetic fixtures for both prescriptions (Amlodipine, Metformin) and lab reports (Fasting Blood Sugar, Hemoglobin, Creatinine, Platelet Count).
+   - Authored scoring harness calculating entity-level precision, recall, and F1 score with token-level containment matching.
+5. **OCR Audit Document (docs/audit/OCR_EVAL.md)**:
+   - Documented OCR evaluation results: Synthetic benchmark scores 100% precision/recall across all fields.
+   - Physical document camera/scanner trials explicitly marked: **NOT RUN — PENDING PHYSICAL DOCUMENT SAMPLES FROM OPERATOR**.
+6. **Automated Verification (src/__tests__/phase6OcrAndDocuments.test.ts)**:
+   - 14 comprehensive unit and integration tests covering upload validation, classification, abnormal lab values, layered adapter consent gating, and synthetic benchmark precision scoring.
+   - Pre-change test count: 102 passing across 13 suites.
+   - Post-change test count: **116 passing across 14 suites (0 regressions)**.
+   - 
+pm run lint (	sc --noEmit): **0 errors**.

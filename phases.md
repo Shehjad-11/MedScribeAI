@@ -142,3 +142,17 @@
 
 
 
+
+---
+
+## Phase 6: Medical Document Upload, Layered OCR Adapters & Timeline
+- **Scope:**
+  - Build pre-flight upload validator (src/services/ocr/ocrAdapters.ts) checking MIME types, 10MB file limit, and 200x200 resolution.
+  - Implement deterministic document classifier and abnormal lab value evaluator for common metabolic/hematologic panels.
+  - Implement layered OCR architecture with Gemini Vision (guarded by consent and local-only switch), Local OCR fallback, and manual clinical entry fallback.
+  - Create synthetic evaluation fixtures and automated precision/recall scoring harness (scripts/scoreOcr.ts).
+  - Document OCR accuracy report in docs/audit/OCR_EVAL.md marking real camera trials as NOT RUN.
+- **Exit Criteria:**
+  - Document & OCR test suite passes 100% (phase6OcrAndDocuments.test.ts).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (	sc --noEmit).

@@ -1,0 +1,33 @@
+[
+  {
+    "id": "eval_rx_001",
+    "fileName": "synthetic_rx_amlodipine.jpg",
+    "documentType": "prescription",
+    "groundTruth": {
+      "prescriptions": [
+        {
+          "medication": "Amlodipine",
+          "dosage": "5mg",
+          "frequency": "Once Daily",
+          "duration": "30 days"
+        }
+      ]
+    }
+  },
+  {
+    "id": "eval_lab_002",
+    "fileName": "synthetic_lab_blood_sugar.png",
+    "documentType": "lab_report",
+    "groundTruth": {
+      "labResults": [
+        {
+          "testName": "Fasting Blood Sugar",
+          "value": "168",
+          "unit": "mg/dL",
+          "isAbnormal": true,
+          "abnormalFlag": "HIGH"
+        }
+      ]
+    }
+  }
+]
