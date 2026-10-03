@@ -124,6 +124,20 @@
   - Zero regressions across existing tests.
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 5: Deterministic Versioned Red-Flag Rules & Triage Engine
+- **Scope:**
+  - Develop 12 versioned, config-driven red-flag rules across all 10 complaints (`src/data/redFlagRules.ts`).
+  - Enforce ruleVersion string strictly present on every generated alert.
+  - Implement deterministic triage evaluation engine (`src/utils/redFlagEngine.ts`) calculating triage priority and sorting emergency alerts first.
+  - Document all rules and safe wording in `docs/CLINICAL_SPEC.md` marked PENDING CLINICIAN REVIEW.
+- **Exit Criteria:**
+  - Red-flag unit and boundary test suite passes 100% (`phase5RedFlagRules.test.ts`).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 
 
 

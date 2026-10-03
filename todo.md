@@ -131,6 +131,18 @@
 - [x] Marathi ASR decision gate document (`docs/audit/ASR_GATE.md` marked NOT RUN pending user audio)
 - [x] Automated test suite in `src/__tests__/phase4AsrAdapters.test.ts` (10/10 passing; all 87/87 passing)
 
+---
+
+## Phase 5: Deterministic Versioned Red-Flag Rules & Triage Engine (Completed)
+- [x] Versioned red-flag ruleset (`src/data/redFlagRules.ts`) with 12 rules across all 10 complaints
+- [x] Enforced ruleVersion strictly present on every emitted alert
+- [x] Non-diagnostic safe triage wording across all rules
+- [x] Triage queue prioritization (Priority 1 STAT / EMERGENCY, Priority 2 URGENT, Priority 3 WARNING, Priority 4 NORMAL)
+- [x] Deterministic red-flag evaluation engine (`src/utils/redFlagEngine.ts`)
+- [x] Documented all 12 rules in `docs/CLINICAL_SPEC.md` marked PENDING CLINICIAN REVIEW
+- [x] Automated test suite in `src/__tests__/phase5RedFlagRules.test.ts` (15/15 passing positive, negative, and boundary tests; all 102/102 passing)
+
+
 
 
 

@@ -85,7 +85,31 @@
 
 ---
 
-## 3. Reviewer Sign-Off Block
+## 3. Deterministic Red-Flag Rules Catalog
+
+> [!WARNING]
+> **RED-FLAG RULES STATUS: PENDING CLINICIAN REVIEW**  
+> All red-flag triggers, triage queue priorities, and clinical action recommendations below are prototype safety guardrails. They require clinical validation by a registered medical officer.
+
+| Rule ID | Version | Category | Severity | Queue Priority | Condition & Trigger Threshold | Safe Triage Wording | Action Required |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| `RF-CARD-001` | `1.0.0` | CHEST_PAIN | **EMERGENCY** | **1 (STAT)** | Diaphoresis OR (Radiation to arm/jaw AND Pain >= 7) | High-risk chest pain pattern with diaphoresis or radiating pain detected. Requires immediate ECG and clinician evaluation. Not a diagnostic confirmation. | Stat 12-lead ECG, vitals monitoring, emergency triage |
+| `RF-RESP-001` | `1.0.0` | BREATHLESSNESS | **EMERGENCY** | **1 (STAT)** | Dyspnea at rest OR cyanosis/stridor | Signs of acute respiratory distress or cyanosis detected. Requires immediate airway, breathing, and SpO2 evaluation. | Immediate pulse oximetry, supplemental O2, emergency triage |
+| `RF-RESP-002` | `1.0.0` | COUGH | **URGENT** | **2 (Urgent)** | Frank blood in sputum (Hemoptysis) | Blood observed in sputum/cough. Requires urgent physician assessment, chest auscultation, and sputum evaluation. | Urgent chest X-ray and sputum examination |
+| `RF-NEURO-001` | `1.0.0` | HEADACHE | **EMERGENCY** | **1 (STAT)** | Sudden onset peak in seconds (Thunderclap) | Sudden-onset explosive headache reaching peak severity in seconds detected. Requires immediate neurological evaluation. | Urgent neurological screening, BP, non-contrast CT referral |
+| `RF-NEURO-002` | `1.0.0` | HEADACHE | **EMERGENCY** | **1 (STAT)** | Neck stiffness with high fever (Meningism) | Neck stiffness and high fever detected. Triage flag for potential acute central nervous system infection. | Stat clinician assessment of Kernig/Brudzinski signs |
+| `RF-GI-001` | `1.0.0` | ABDOMINAL_PAIN | **EMERGENCY** | **1 (STAT)** | Involuntary abdominal wall rigidity / rebound | Severe abdominal wall rigidity or guarding detected. Triage flag for acute peritonitis or surgical abdomen. | Stat surgical consultation, NPO, IV access |
+| `RF-GI-002` | `1.0.0` | VOMITING_DIARRHEA | **EMERGENCY** | **1 (STAT)** | Anuria / altered sensorium OR Stool freq > 6 | Severe gastrointestinal fluid losses with absent urination or altered consciousness. Risk of hypovolemic shock. | Immediate IV fluid resuscitation, electrolyte panel |
+| `RF-HEM-001` | `1.0.0` | FEVER | **EMERGENCY** | **1 (STAT)** | Petechial skin rash OR mucosal bleeding | Febrile illness accompanied by cutaneous petechiae or mucosal bleeding. Triage flag for severe thrombocytopenia or dengue hemorrhagic fever. | Stat platelet count, hematocrit, emergency triage |
+| `RF-FEV-001` | `1.0.0` | FEVER | **URGENT** | **2 (Urgent)** | Duration >= 7 days | Continuous fever lasting 7 or more days. Triage flag for enteric fever, malaria, or deep focus bacterial infection. | CBC, malaria smear, blood culture |
+| `RF-REN-001` | `1.0.0` | URINARY_SYMPTOMS | **URGENT** | **2 (Urgent)** | Macroscopic / frank hematuria | Visible macroscopic blood in urine. Requires prompt renal ultrasound, urinalysis, and urological workup. | Urinalysis microscopy, renal ultrasonography |
+| `RF-HYP-001` | `1.0.0` | DIABETES_HYPERTENSION | **EMERGENCY** | **1 (STAT)** | Acute blurry vision OR chest tightness | Patient with hypertensive history reporting sudden visual blurring or acute chest tightness. Triage flag for hypertensive crisis. | Stat blood pressure measurement, fundoscopy, ECG |
+| `RF-MSK-001` | `1.0.0` | JOINT_PAIN | **HIGH** | **3 (Priority)** | Complete inability to bear weight | Complete inability to bear weight on affected limb. Requires radiographic evaluation to rule out acute fracture or septic arthritis. | Plain X-ray of joint, immobilization |
+
+---
+
+## 4. Reviewer Sign-Off Block
 - **Reviewing Physician:** `PENDING MBBS ASSIGNMENT`
 - **Date Reviewed:** `PENDING`
 - **Clinical Recommendation:** `PENDING`
+

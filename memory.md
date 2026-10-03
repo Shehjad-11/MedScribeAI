@@ -487,6 +487,43 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
    - Post-change test count: **87 passing across 12 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 5: Deterministic Versioned Red-Flag Rules & Triage Engine
+
+### Summary of Implementation & Verification
+1. **Config-Driven Versioned Red-Flag Ruleset (`src/data/redFlagRules.ts`)**:
+   - Implemented 12 versioned triage rules spanning all 10 complaints:
+     - `RF-CARD-001` (v1.0.0): Acute Coronary Syndrome risk (chest pain + diaphoresis or radiation to arm/jaw with severe pain). Priority 1 (EMERGENCY).
+     - `RF-RESP-001` (v1.0.0): Acute Respiratory Distress (resting dyspnea / cyanosis / stridor). Priority 1 (EMERGENCY).
+     - `RF-RESP-002` (v1.0.0): Hemoptysis in productive cough. Priority 2 (URGENT).
+     - `RF-NEURO-001` (v1.0.0): Thunderclap explosive headache. Priority 1 (EMERGENCY).
+     - `RF-NEURO-002` (v1.0.0): Nuchal rigidity with fever (Meningism). Priority 1 (EMERGENCY).
+     - `RF-GI-001` (v1.0.0): Peritoneal wall rigidity / rebound tenderness. Priority 1 (EMERGENCY).
+     - `RF-GI-002` (v1.0.0): Severe dehydration / anuria / severe vomiting-diarrhea. Priority 1 (EMERGENCY).
+     - `RF-HEM-001` (v1.0.0): Petechial purpura / bleeding in febrile illness. Priority 1 (EMERGENCY).
+     - `RF-FEV-001` (v1.0.0): Prolonged pyrexia >= 7 days. Priority 2 (URGENT).
+     - `RF-REN-001` (v1.0.0): Macroscopic hematuria. Priority 2 (URGENT).
+     - `RF-HYP-001` (v1.0.0): Acute visual blurring or chest tightness in hypertension. Priority 1 (EMERGENCY).
+     - `RF-MSK-001` (v1.0.0): Acute inability to bear weight. Priority 3 (WARNING).
+2. **Deterministic Triage Evaluation Engine (`src/utils/redFlagEngine.ts`)**:
+   - Strictly attaches `ruleVersion` (e.g. `'1.0.0'`) on every emitted alert.
+   - Computes assigned queue priority (1 = STAT, 2 = Urgent, 3 = Warning, 4 = Normal).
+   - Enforces non-diagnostic safe triage wording across all rule descriptions.
+3. **Clinical Specification (`docs/CLINICAL_SPEC.md`)**:
+   - Documented full catalog of 12 red-flag rules with trigger conditions, safe wording, and required emergency actions, prominently stamped: `RED-FLAG RULES STATUS: PENDING CLINICIAN REVIEW`.
+4. **Automated Verification (`src/__tests__/phase5RedFlagRules.test.ts`)**:
+   - 15 comprehensive unit tests covering:
+     - Rule version strictly present on every rule and emitted alert.
+     - Positive trigger tests for all critical red flags.
+     - Negative tests ensuring zero false positives on routine illnesses.
+     - Boundary threshold tests (fever duration 6 days vs 7 days; pain score 6 vs 7).
+     - Triage queue sorting ensuring Priority 1 (EMERGENCY) alerts precede Priority 2 and 3.
+   - Pre-change test count: 87 passing across 12 suites.
+   - Post-change test count: **102 passing across 13 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 
 
