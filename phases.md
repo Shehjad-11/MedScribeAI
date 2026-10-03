@@ -111,6 +111,20 @@
   - Total test count passes with zero regressions.
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 4: ASR Adapters, TTS & Marathi ASR Gate Harness
+- **Scope:**
+  - Build layered ASR adapters (`src/services/asr/asrAdapters.ts`) for Bhashini (with labeled mock fallback), Local Whisper (feasibility evaluated and stated not feasible in browser/Node), Web Speech, and Manual touch/text.
+  - Implement browser-based Text-to-Speech service for patient vocal prompts.
+  - Create Marathi ASR gate scoring harness (`scripts/scoreAsr.ts`) measuring WER and CER.
+  - Create audio fixture manifest (`fixtures/audio/marathi_eval/manifest.json`) and audit report (`docs/audit/ASR_GATE.md`) explicitly listing operator-supplied recordings and marked NOT RUN.
+- **Exit Criteria:**
+  - ASR adapters and scoring test suite passes 100% (`phase4AsrAdapters.test.ts`).
+  - Zero regressions across existing tests.
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 
 
 

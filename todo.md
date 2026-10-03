@@ -118,6 +118,20 @@
 - [x] Clinical specification document for MBBS review (`docs/CLINICAL_SPEC.md` marked PENDING MBBS REVIEW)
 - [x] Automated test suite in `src/__tests__/phase3InterviewEngine.test.ts` (9/9 passing; all 77/77 passing)
 
+---
+
+## Phase 4: ASR Adapters, TTS & Marathi ASR Gate Harness (Completed)
+- [x] Bhashini ASR adapter (`src/services/asr/asrAdapters.ts`) with credentials checking and labeled mock fallback
+- [x] Local Whisper feasibility assessment (feasibility rejected for browser runtime, marked NOT RUN)
+- [x] Web Speech API adapter with graceful headless fallback
+- [x] Failsafe manual input fallback adapter
+- [x] Browser Text-to-Speech (TTS) service with Indic voice support
+- [x] Levenshtein-based WER and CER evaluation harness (`scripts/scoreAsr.ts`)
+- [x] Marathi ASR gate fixture manifest (`fixtures/audio/marathi_eval/manifest.json`)
+- [x] Marathi ASR decision gate document (`docs/audit/ASR_GATE.md` marked NOT RUN pending user audio)
+- [x] Automated test suite in `src/__tests__/phase4AsrAdapters.test.ts` (10/10 passing; all 87/87 passing)
+
+
 
 
 

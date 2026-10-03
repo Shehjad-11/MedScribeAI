@@ -462,6 +462,32 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
    - Post-change test count: **77 passing across 11 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 4: ASR Adapters, TTS & Marathi Gate Evaluation Harness
+
+### Summary of Implementation & Verification
+1. **Layered ASR Adapters (`src/services/asr/asrAdapters.ts`)**:
+   - `BhashiniASRAdapter`: Checks for `BHASHINI_API_KEY` / `BHASHINI_USER_ID`; if absent, returns clearly labeled mock (`isMock: true`, language-aware transcript, and explicit disclaimer: "MOCK BHASHINI ASR ADAPTER — BHASHINI_API_KEY NOT CONFIGURED IN ENVIRONMENT").
+   - `LocalWhisperASRAdapter`: Evaluated hardware and runtime environment. In standard web/Node runtime, reports `feasible: false, reason: "Local Whisper requires native C++/CUDA or Python runtime binaries... Marked NOT RUN"`.
+   - `WebSpeechASRAdapter`: Browser speech recognition integration with graceful degradation.
+   - `ManualFallbackASRAdapter`: Always-available failsafe returning typed input with confidence 1.0.
+   - `ASRManager`: Orchestrates layered fallback without throwing.
+2. **Browser TTS Service (`src/services/asr/asrAdapters.ts`)**:
+   - Implemented `TTSService` using `speechSynthesis` with Indian English, Hindi, Marathi, and Spanish voice mappings, throttled to 0.9x rate for rural clinic clarity. Headless-safe.
+3. **Marathi ASR Evaluation Harness (`scripts/scoreAsr.ts`)**:
+   - Levenshtein distance-based scoring harness calculating Word Error Rate (WER), Character Error Rate (CER), substitutions, deletions, and insertions.
+   - Batch evaluation support with target threshold comparison (WER <= 25%).
+4. **ASR Gate Audit & Manifest (`docs/audit/ASR_GATE.md` & `fixtures/audio/marathi_eval/manifest.json`)**:
+   - Created `fixtures/audio/marathi_eval/manifest.json` specifying the 5 required audio test cases across demographics.
+   - Documented decision policy in `docs/audit/ASR_GATE.md` explicitly marking status: **NOT RUN — PENDING AUDIO RECORDINGS FROM OPERATOR** with zero invented metrics.
+5. **Automated Verification (`src/__tests__/phase4AsrAdapters.test.ts`)**:
+   - 10 comprehensive unit tests covering Bhashini credential fallback, Whisper feasibility, Web Speech handling, manual fallback, TTS execution, and WER/CER mathematical accuracy.
+   - Pre-change test count: 77 passing across 11 suites.
+   - Post-change test count: **87 passing across 12 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 
 
