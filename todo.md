@@ -66,3 +66,19 @@
 - [x] Spanish-language transcript input support end-to-end (UI chrome localized, Gemini prompt updated for English SOAP generation with verbatim quotes, offline non-English warning banner, and Spanish test scenario)
 - [x] Multi-language clinical pipeline test suite (`src/__tests__/multiLanguagePipeline.test.tsx`)
 - [x] Prompt-injection remediation (delimit `patientInfo` and `transcript` with `<patient_demographics>` and `<clinical_transcript>` boundary tags in `server.ts` and enforce data-isolation system instruction)
+
+---
+
+## Phase 1 (SIH 2026): Foundation, ClinicalCase, SQLite & Security Skeleton (Completed)
+- [x] Shared TypeScript domain model: `ClinicalCase` and `ClinicalFact` provenance types (`src/types/clinicalCase.ts`) with sources: `PATIENT_REPORTED`, `CLINICIAN_OBSERVED`, `DOCUMENT_EXTRACTED`, `AI_GENERATED`, `CLINICIAN_VERIFIED`
+- [x] Minimal server-side persistence with SQLite (`better-sqlite3`, WAL mode, foreign keys, 9 Tier 1 tables in `server/db/schema.sql` and `server/db/database.ts`)
+- [x] Section 39 dependency justification documented for `better-sqlite3` (embedded, synchronous, 100% offline, zero client bundle impact)
+- [x] Security skeleton with namespace separation (`/api/kiosk/*` and `/api/clinician/*`) in `server/security/auth.ts`
+- [x] Session-scoped kiosk tokens (`kiosk_<hex>`) with automatic 30-min TTL and server-side reset/wipe
+- [x] RBAC enforcement: Kiosk tokens strictly rejected on clinician routes with 403 Forbidden
+- [x] Clinician authentication (`POST /api/clinician/login`) with 8-hour sessions
+- [x] Minimal audit events recorded in SQLite (`SESSION_CREATED`, `SESSION_RESET`, `CONSENT_RECORDED`, `CASE_SUBMITTED`, `CLINICIAN_APPROVAL`, `FHIR_EXPORT`)
+- [x] API contract documentation in `docs/API_SPEC.md`
+- [x] Client API service module in `src/services/api.ts`
+- [x] Automated test suite in `src/__tests__/phase1SecurityAndFoundation.test.ts` (7/7 tests passing; all 53/53 test suite passing)
+

@@ -277,3 +277,85 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
 ### Audit Status
 - Phase 0 Audit approved. Spot checks verified (model string `gemini-3.6-flash`, exactly 9 interaction rules, 46/46 tests passing).
 - Ready for Phase 1 execution upon prompt.
+
+---
+
+## Session Log: 2026-10-03 — PROMPT 0.5: Scope Finalization, Unverified Audit Items & Phase Hours Budget
+
+### Parameters Recorded
+- **Team Size:** 1 developer
+- **Hours per Week per Person:** 25 hrs/week
+- **SIH Deadline:** 14 Nov 2026 (6 weeks from 03 Oct 2026)
+- **Total Gross Hours:** 150 hours (100 baseline engineering hours @ 1.5x buffer)
+- **Today's Date:** 03 Oct 2026
+- **BAMS Reviewer:** none yet (outreach targeted for Week 1)
+- **MBBS Reviewer:** none yet (outreach targeted for Week 1)
+- **Bhashini Access:** none yet (application submitted)
+- **Live Gemini Key Tested with Existing SOAP Flow:** yes (`gemini-3.6-flash`, `PORT=3000`)
+
+### Finalized Tier 1 Scope Table (Cut Order Applied)
+- Complaints: REDUCE (10 -> 5: Chest Pain, Fever, Cough, Abdominal Pain, Headache)
+- Marathi Voice: CUT (Marathi Touch-Only primary)
+- Hindi Voice: REDUCE (Touch-first primary, Web Speech fallback)
+- AYUSH: REDUCE (Prakriti & Agni thin slice only)
+- Documents: REDUCE (Prescriptions & Lab Reports only)
+- Non-negotiables: KEEP 100% (Red Flags, Safety Rules, Clinician Gate, Session Isolation, Provenance, Vertical Slice)
+
+### Unverified Claims
+- Live Gemini API network call during automated tests (tests mock API or test offline fallback)
+- Concurrency & stress limits of SQLite under multi-kiosk load
+- Physical touchscreen kiosk browser rendering (tested only on desktop browser emulation)
+- Real handwritten prescription OCR accuracy (only synthetic fixtures tested)
+- Real-world clinical validation of the 9 drug interaction rules (requires MBBS review)
+- Real-world clinical validation of Prakriti/Agni questionnaire (requires BAMS review)
+
+### Phase Hours Budget (Base / 1.5x Buffered)
+- Phase 1 (Foundation & Security Skeleton): 8h / 12h
+- Phase 1.5 (Chest-pain vertical slice): 10h / 15h
+- Phase 2 (Patient MVP shell): 8h / 12h
+- Phase 3 (Interview engine): 12h / 18h
+- Phase 4 (Voice & Marathi gate): 8h / 12h
+- Phase 5 (Red-flag engine): 6h / 9h
+- Phase 6 (Documents & OCR): 10h / 15h
+- Phase 7 (AYUSH thin slice): 4h / 6h
+- Phase 8 (Doctor console integration): 8h / 12h
+- Phase 9 (SOAP, safety & FHIR): 10h / 15h
+- Phase 11 (Security hardening): 8h / 12h
+- Phase 12 (Evaluation): 6h / 9h
+- Phase 13 (Local deployment): 4h / 6h
+- Phase 15 (Demo hardening & runbook): 4h / 6h
+- Total: 98h Base / 147h Buffered (Fits inside 150h capacity).
+- Flagged/Deferred: Phase 10 (Tier 2 polish) and Phase 14 (Tunnel).
+
+---
+
+## Session Log: 2026-10-03 — Phase 1: Foundation, ClinicalCase Schema & Security Skeleton
+
+### Summary of Implementation & Verification
+1. **ClinicalCase & Provenance Domain Schema (`src/types/clinicalCase.ts`, `src/types.ts`)**:
+   - Implemented `ClinicalCase`, `ClinicalFact`, and `PatientConsent` schemas.
+   - Enforced 5 standard provenance sources: `PATIENT_REPORTED`, `CLINICIAN_OBSERVED`, `DOCUMENT_EXTRACTED`, `AI_GENERATED`, and `CLINICIAN_VERIFIED`.
+   - Included metadata fields: `confidence`, `timestamp`, `method`, `verificationState`, `rawFragment`, `verifiedBy`.
+2. **Minimal Server-Side SQLite Persistence (`server/db/schema.sql`, `server/db/database.ts`)**:
+   - Installed `better-sqlite3` and `@types/better-sqlite3` (justified under Section 39: synchronous, embedded, 100% offline, zero client bundle weight).
+   - Created all 9 Tier 1 tables: `sessions`, `patients`, `consents`, `clinical_cases`, `clinical_facts`, `documents`, `soap_notes`, `safety_alerts`, `audit_events`.
+   - Enabled WAL mode and foreign key enforcement (`PRAGMA foreign_keys = ON`).
+3. **Security Skeleton & Namespace Isolation (`server/security/auth.ts`, `server/routes/kioskRoutes.ts`, `server/routes/clinicianRoutes.ts`, `server.ts`)**:
+   - Isolated `/api/kiosk/*` and `/api/clinician/*` namespaces.
+   - Session-scoped kiosk tokens (`kiosk_<hex>`) with automatic 30-min TTL and server-side reset/wipe.
+   - RBAC enforcement: Kiosk tokens strictly rejected with `403 Forbidden` on all clinician endpoints.
+   - Clinician authentication (`POST /api/clinician/login`) with 8-hour session lifetime.
+   - Cross-patient isolation: Patient A session reset immediately invalidates token and unlinks case; Patient B cannot read or overwrite Patient A's case data.
+   - Minimal audit event logging in SQLite for `SESSION_CREATED`, `SESSION_RESET`, `CONSENT_RECORDED`, `CASE_SUBMITTED`, `CLINICIAN_APPROVAL`, `FHIR_EXPORT`.
+4. **Documentation & Client API**:
+   - Documented full API contracts in `docs/API_SPEC.md`.
+   - Built typed client API client in `src/services/api.ts`.
+5. **UI Polish**:
+   - Enhanced workstation Header with "SQLite Isolated" security badge.
+6. **Automated Verification**:
+   - Created `src/__tests__/phase1SecurityAndFoundation.test.ts` with 7 comprehensive integration tests.
+   - Pre-change test count: 46 passing across 7 suites.
+   - Post-change test count: **53 passing across 8 suites (46 existing + 7 new, 0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+

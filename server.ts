@@ -2,12 +2,34 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
+import { getDatabase } from './server/db/database';
+import { createKioskRouter } from './server/routes/kioskRoutes';
+import { createClinicianRouter } from './server/routes/clinicianRoutes';
 
 const app = express();
 const PORT = 3000;
 
 // Middleware for JSON body parsing (increase limit for audio uploads)
 app.use(express.json({ limit: '50mb' }));
+
+// CORS headers for local kiosk and development environments
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+
+// Initialize SQLite database instance
+const getDb = () => getDatabase();
+
+// Mount Security Skeleton & Tier 1 Routes
+app.use('/api/kiosk', createKioskRouter(getDb));
+app.use('/api/clinician', createClinicianRouter(getDb));
 
 // Lazy initializer for Gemini client
 let aiClient: GoogleGenAI | null = null;
@@ -33,6 +55,7 @@ function getGeminiClient(): GoogleGenAI {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', app: 'MedScribe Lite' });
 });
+
 
 // SOAP Note Generation API endpoint
 app.post('/api/medscribe/generate', async (req, res) => {
@@ -240,4 +263,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+export { app, startServer };

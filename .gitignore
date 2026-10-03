@@ -7,3 +7,6 @@ coverage/
 .vscode/
 .idea/
 *.log
+*.db
+*.db-wal
+*.db-shm

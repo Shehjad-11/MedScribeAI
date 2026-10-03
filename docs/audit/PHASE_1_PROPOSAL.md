@@ -27,23 +27,32 @@ export type CaseStatus =
   | 'fhir_exported';
 
 export type ProvenanceSource = 
-  | 'patient_touch'
-  | 'audio_transcript'
-  | 'ocr_document'
-  | 'clinician_edit'
-  | 'offline_engine'
-  | 'gemini_ai';
+  | 'PATIENT_REPORTED'
+  | 'CLINICIAN_OBSERVED'
+  | 'DOCUMENT_EXTRACTED'
+  | 'AI_GENERATED'
+  | 'CLINICIAN_VERIFIED';
+
+export type VerificationState = 
+  | 'unverified'
+  | 'patient_confirmed'
+  | 'clinician_verified'
+  | 'rejected';
 
 export interface ProvenanceRecord {
   source: ProvenanceSource;
-  timestamp: string;
   confidence?: number;
+  timestamp: string;
+  method: 'touch' | 'voice_asr' | 'ocr' | 'doctor_entry' | 'rule_engine' | 'llm_extraction';
+  verificationState: VerificationState;
   rawFragment?: string;
-  verifiedByPatient: boolean;
-  approvedByClinician: boolean;
 }
 
 export interface ClinicalFact<T = string> {
+  id?: string;
+  caseId?: string;
+  category?: string;
+  field: string;
   value: T;
   provenance: ProvenanceRecord;
 }
@@ -125,42 +134,103 @@ export interface ClinicalCase {
 ### 2.2 Minimal Server Persistence (SQLite)
 A local, file-backed SQLite database (`server/db/medscribe.db`) will replace reliance on insecure browser `localStorage`.
 - **Database Driver:** `better-sqlite3` (fast, synchronous C-based SQLite bindings for Node.js).
-- **Schema DDL:**
+- **Schema DDL (Tier 1 Tables):**
   ```sql
   -- server/db/schema.sql
-  CREATE TABLE IF NOT EXISTS clinical_cases (
-    id TEXT PRIMARY KEY,
-    status TEXT NOT NULL,
-    patient_temp_id TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    data_json TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS kiosk_sessions (
+  CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY,
+    session_type TEXT NOT NULL CHECK(session_type IN ('kiosk', 'clinician')),
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     active_case_id TEXT,
     is_active INTEGER DEFAULT 1
   );
 
-  CREATE TABLE IF NOT EXISTS clinician_users (
+  CREATE TABLE IF NOT EXISTS patients (
     id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    display_name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'doctor'
+    temp_id TEXT UNIQUE NOT NULL,
+    created_at TEXT NOT NULL,
+    demographics_json TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS consents (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL,
+    granted INTEGER NOT NULL,
+    scope_json TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    method TEXT NOT NULL,
+    version TEXT NOT NULL,
+    FOREIGN KEY(patient_id) REFERENCES patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS clinical_cases (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'en',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    FOREIGN KEY(patient_id) REFERENCES patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS clinical_facts (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    field TEXT NOT NULL,
+    value_json TEXT NOT NULL,
+    provenance_source TEXT NOT NULL,
+    provenance_method TEXT NOT NULL,
+    confidence REAL,
+    verification_state TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(case_id) REFERENCES clinical_cases(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS documents (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    ocr_raw_text TEXT,
+    extracted_data_json TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(case_id) REFERENCES clinical_cases(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS soap_notes (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    subjective TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    assessment TEXT NOT NULL,
+    plan TEXT NOT NULL,
+    generated_by TEXT NOT NULL,
+    confidence_score INTEGER,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(case_id) REFERENCES clinical_cases(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS safety_alerts (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    alert_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    message TEXT NOT NULL,
+    acknowledged INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(case_id) REFERENCES clinical_cases(id)
   );
 
   CREATE TABLE IF NOT EXISTS audit_events (
     id TEXT PRIMARY KEY,
-    timestamp TEXT NOT NULL,
     case_id TEXT,
     actor_type TEXT NOT NULL,
     actor_id TEXT,
     action TEXT NOT NULL,
-    details_json TEXT
+    details_json TEXT,
+    timestamp TEXT NOT NULL
   );
   ```
 

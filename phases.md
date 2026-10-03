@@ -55,3 +55,20 @@
   - Edge-case and resilience testing: Ensure robust error boundaries, graceful API failure handling, and input edge case validation across all async workflows.
   - Internationalization: Support multi-language end-to-end processing starting with Spanish-language transcript inputs.
 - **Exit Criteria:** Zero committed secrets, `npm audit` clean of high/critical vulnerabilities, error boundaries on every async flow, and at least Spanish-language transcript input supported end-to-end.
+
+---
+
+## Phase 1 (SIH 2026 Redevelopment): Foundation & Security Skeleton
+- **Scope:**
+  - Build central `ClinicalCase` TypeScript schema with 5 provenance sources (`PATIENT_REPORTED`, `CLINICIAN_OBSERVED`, `DOCUMENT_EXTRACTED`, `AI_GENERATED`, `CLINICIAN_VERIFIED`).
+  - Implement Tier 1 server-side SQLite persistence (`server/db/schema.sql` and `server/db/database.ts` with 9 tables).
+  - Enforce Security Skeleton with namespace isolation: `/api/kiosk/*` and `/api/clinician/*`.
+  - Session-scoped kiosk tokens with 30-min expiry, server-side reset/wipe, and cross-patient isolation.
+  - Strict RBAC: Kiosk tokens rejected with 403 Forbidden on all clinician endpoints.
+  - Minimal audit event logging for consent, sessions, submission, approval, and FHIR export.
+  - Document complete API contracts in `docs/API_SPEC.md`.
+- **Exit Criteria:**
+  - All 46 existing Vitest tests continue to pass without regression.
+  - Security integration test suite passes 100% proving kiosk isolation, 403 rejection, and unauthenticated rejection.
+  - Clean TypeScript compilation (`tsc --noEmit`).
+

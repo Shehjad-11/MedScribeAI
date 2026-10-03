@@ -1,6 +1,7 @@
 import React from 'react';
-import { Stethoscope, History, BarChart3, Wifi, Sparkles, Cpu, Globe } from 'lucide-react';
+import { Stethoscope, History, BarChart3, Wifi, Sparkles, Cpu, Globe, ShieldCheck } from 'lucide-react';
 import { useTranslation } from '../i18n';
+
 
 interface HeaderProps {
   onOpenHistory: () => void;
@@ -72,7 +73,13 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
             <span>{t.header.guardrailsActive}</span>
           </div>
+          <span className="text-slate-300">|</span>
+          <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/80 font-semibold text-[11px]" title="Tier 1 SQLite persistence & session isolation active">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden xl:inline">SQLite Isolated</span>
+          </div>
         </div>
+
 
         {/* Action Controls & Language Switcher */}
         <div id="header-actions" className="flex items-center space-x-2 sm:space-x-3">

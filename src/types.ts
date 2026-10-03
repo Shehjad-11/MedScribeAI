@@ -117,3 +117,6 @@ export interface SampleScenario {
   patientInfo: PatientInfo;
   transcript: string;
 }
+
+// Re-export unified ClinicalCase & Provenance domain types
+export * from './types/clinicalCase';
