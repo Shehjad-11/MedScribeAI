@@ -1,0 +1,49 @@
+{
+  "_notice": "SYNTHETIC FIXTURE FOR TESTING AND DEMO ONLY. ZERO REAL PATIENT DATA.",
+  "fixtureId": "synth_rx_chest_pain_01",
+  "documentType": "prescription",
+  "issueDate": "2026-09-15",
+  "clinicName": "Community Primary Health Center (Synthetic)",
+  "prescriber": "Dr. Synthetic Clinician, MBBS (Reg: SYN-10023)",
+  "patient": {
+    "name": "Rajesh Sharma (SYNTHETIC)",
+    "age": 52,
+    "sex": "Male"
+  },
+  "diagnoses": [
+    "Hypertension (Essential)",
+    "Hyperlipidemia"
+  ],
+  "extractedMedications": [
+    {
+      "medication": "Atorvastatin",
+      "dosage": "20 mg",
+      "frequency": "Once daily at bedtime",
+      "duration": "30 days",
+      "instructions": "Take at night with water",
+      "provenance": {
+        "source": "DOCUMENT_EXTRACTED",
+        "method": "ocr",
+        "confidence": 0.95,
+        "timestamp": "2026-10-03T10:00:00.000Z",
+        "verificationState": "unverified",
+        "rawFragment": "Tab. Atorvastatin 20mg 0-0-1 x 30 days"
+      }
+    },
+    {
+      "medication": "Aspirin",
+      "dosage": "75 mg",
+      "frequency": "Once daily after meals",
+      "duration": "30 days",
+      "instructions": "Take after breakfast",
+      "provenance": {
+        "source": "DOCUMENT_EXTRACTED",
+        "method": "ocr",
+        "confidence": 0.92,
+        "timestamp": "2026-10-03T10:00:00.000Z",
+        "verificationState": "unverified",
+        "rawFragment": "Tab. Ecosprin 75mg 1-0-0 x 30 days"
+      }
+    }
+  ]
+}

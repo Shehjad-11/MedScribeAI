@@ -72,3 +72,16 @@
   - Security integration test suite passes 100% proving kiosk isolation, 403 rejection, and unauthenticated rejection.
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 1.5: Chest Pain Vertical Slice
+- **Scope:**
+  - Synthesize synthetic prescription fixture for chest pain patient with OCR extraction mockup.
+  - Wire kiosk intake through red-flag evaluation (`RF-CARD-001`), clinical case creation, doctor summary, existing SOAP synthesis, deterministic safety checking, clinician approval gate, FHIR export, and kiosk session wipe.
+  - Automated end-to-end integration test validating the entire cross-role pipeline.
+- **Exit Criteria:**
+  - Full end-to-end integration test passes (`phase1_5VerticalSlice.test.ts`).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+

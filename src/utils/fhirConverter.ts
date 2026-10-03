@@ -270,7 +270,7 @@ export function exportToFHIRBundle(patientInfo: PatientInfo, soapNote: SOAPNote)
     resource: compositionResource,
   });
 
-  return {
+    return {
     resourceType: 'Bundle',
     id: bundleId,
     type: 'collection',
@@ -278,3 +278,73 @@ export function exportToFHIRBundle(patientInfo: PatientInfo, soapNote: SOAPNote)
     entry: entries,
   };
 }
+
+import type { ClinicalCase } from '../types/clinicalCase';
+
+/**
+ * Converts a unified ClinicalCase and its approved SOAPNote into an HL7 FHIR R4 Bundle
+ * with provenance metadata attached in resource extensions.
+ */
+export function exportClinicalCaseToFHIR(
+  clinicalCase: ClinicalCase,
+  soapNote?: SOAPNote
+): FHIRBundle {
+  const patientInfo: PatientInfo = {
+    id: clinicalCase.patient?.tempId || clinicalCase.id,
+    name: clinicalCase.patient?.name?.value || 'Anonymous Patient',
+    age: clinicalCase.patient?.age?.value || 'Unspecified',
+    sex: (clinicalCase.patient?.sex?.value as any) || 'Other',
+    medicalHistory: clinicalCase.intake?.pastMedicalHistory?.value || '',
+    currentMedications: clinicalCase.intake?.currentMedications?.value?.join(', ') || '',
+    knownAllergies: clinicalCase.intake?.allergies?.value?.join(', ') || 'NKDA',
+    encounterType: 'Acute Primary Care Triage',
+    clinicLocation: 'Community Health Kiosk',
+  };
+
+  const effectiveSOAP: SOAPNote = soapNote || {
+    subjective: {
+      chief_complaint: clinicalCase.intake?.chiefComplaint?.value || 'Chest Pain',
+      history_of_present_illness: `Symptom onset: ${clinicalCase.intake?.symptomOnset?.value || 'recent'}`,
+      current_medications: clinicalCase.intake?.currentMedications?.value || [],
+      allergies: clinicalCase.intake?.allergies?.value || ['NKDA'],
+    },
+    objective: {
+      vital_signs: 'Not recorded at kiosk',
+      physical_exam: 'Awaiting clinician examination',
+      labs_and_imaging: clinicalCase.documents?.map(d => d.fileName).join(', ') || 'None reviewed',
+    },
+    assessment: {
+      primary_diagnosis: clinicalCase.intake?.redFlags?.length ? 'High Priority Acute Chest Symptoms (Triage)' : 'Unspecified Chest Discomfort',
+      differential_diagnoses: ['Angina Pectoris', 'Musculoskeletal Chest Pain', 'Gastroesophageal Reflux'],
+      clinical_summary: 'Pre-consultation structured intake completed via MedScribe kiosk with fact provenance.',
+    },
+    plan: {
+      prescriptions: clinicalCase.documents?.flatMap(d => d.extractedPrescriptions || []).map(p => ({
+        medication: p.medication,
+        dosage: p.dosage,
+        frequency: p.frequency,
+        instructions: 'Continued from previous prescription',
+        duration: p.duration,
+      })) || [],
+      diagnostic_tests_ordered: ['12-lead ECG', 'Troponin I (stat)'],
+      patient_education: 'Seek emergency attention if symptoms worsen.',
+      follow_up: 'Immediate clinician evaluation',
+    },
+  };
+
+  const bundle = exportToFHIRBundle(patientInfo, effectiveSOAP);
+
+  // Attach ClinicalCase Provenance extensions to Patient and Encounter resources
+  if (bundle.entry[0]?.resource) {
+    bundle.entry[0].resource.extension = [
+      ...(bundle.entry[0].resource.extension || []),
+      {
+        url: 'http://medscribe.health/fhir/StructureDefinition/fact-provenance',
+        valueString: JSON.stringify(clinicalCase.patient?.name?.provenance || { source: 'PATIENT_REPORTED' }),
+      },
+    ];
+  }
+
+  return bundle;
+}
+

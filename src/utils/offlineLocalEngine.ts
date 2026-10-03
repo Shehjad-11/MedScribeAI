@@ -13,7 +13,9 @@ export function generateOfflineSOAPNote(patientInfo: PatientInfo, transcript: st
 
   // 1. Extract Subjective Data
   let chiefComplaint = 'Acute medical evaluation requested';
-  if (lowerTranscript.includes('fever') || lowerTranscript.includes('chills')) {
+  if (lowerTranscript.includes('chest pain') || lowerTranscript.includes('angina') || lowerTranscript.includes('substernal')) {
+    chiefComplaint = 'Acute retrosternal chest pain and breathlessness';
+  } else if (lowerTranscript.includes('fever') || lowerTranscript.includes('chills')) {
     chiefComplaint = 'High fever, rigors, and body aches';
   } else if (lowerTranscript.includes('blood pressure') || lowerTranscript.includes('hypertension') || lowerTranscript.includes('dizziness')) {
     chiefComplaint = 'Elevated blood pressure screening & headache';
@@ -69,7 +71,16 @@ export function generateOfflineSOAPNote(patientInfo: PatientInfo, transcript: st
     { code: '99213', description: 'Office or other outpatient visit, established patient', rationale: 'Low-to-moderate medical decision making' },
   ];
 
-  if (lowerTranscript.includes('malaria') || lowerTranscript.includes('rdt positive') || lowerTranscript.includes('artemether')) {
+  if (lowerTranscript.includes('chest pain') || lowerTranscript.includes('angina')) {
+    primaryDiag = 'Suspected Acute Coronary Syndrome / Angina Pectoris';
+    diffDiags = ['Gastroesophageal Reflux Disease', 'Musculoskeletal Chest Wall Pain', 'Pericarditis'];
+    summary = 'Patient reports acute chest tightness with high-risk features requiring immediate ECG, cardiac biomarkers, and urgent referral.';
+    prescriptions = [
+      { medication: 'Aspirin', dosage: '300mg', frequency: 'Stat chewable', duration: '1 day', instructions: 'Chew immediately for suspected coronary event' },
+      { medication: 'Glyceryl Trinitrate (GTN)', dosage: '0.5mg', frequency: 'Sublingual PRN', duration: '3 days', instructions: 'Place under tongue if chest pain persists' },
+    ];
+    icdCodes = [{ code: 'I20.9', description: 'Angina pectoris, unspecified', confidence: 'High' }];
+  } else if (lowerTranscript.includes('malaria') || lowerTranscript.includes('rdt positive') || lowerTranscript.includes('artemether')) {
     primaryDiag = 'Uncomplicated Plasmodium falciparum Malaria';
     diffDiags = ['Typhoid Fever', 'Dengue Fever', 'Acute Pyelonephritis'];
     summary = 'Clinical presentation and positive malaria RDT confirm acute Plasmodium falciparum parasitemia requiring prompt antimalarial therapy.';

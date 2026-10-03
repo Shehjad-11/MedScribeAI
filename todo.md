@@ -83,4 +83,15 @@
 - [x] Automated test suite in `src/__tests__/phase1SecurityAndFoundation.test.ts` (9/9 tests passing; all 55/55 test suite passing)
 - [x] Phase 1 Review & Hardening completed: removed hardcoded credentials, reverted UI badge, isolated test DB to in-memory, tested full reset semantics (delete unsubmitted, preserve submitted, 401 on reuse), logged RSK-11 in Risk Register.
 
+---
+
+## Phase 1.5: Chest Pain Vertical Slice (Completed)
+- [x] Synthetic prescription fixture (`fixtures/prescriptions/synthetic_prescription_chest_pain.json` and `.svg`)
+- [x] Kiosk red-flag evaluation on intake (`RF-CARD-001`, `EMERGENCY` priority)
+- [x] Clinician endpoints: `POST /api/clinician/cases/:id/generate-soap`, `POST /api/clinician/cases/:id/approve`, `GET /api/clinician/cases/:id/fhir`
+- [x] FHIR R4 Bundle generator extended for `ClinicalCase` (`src/utils/fhirConverter.ts`)
+- [x] Offline local engine updated for acute coronary syndrome recognition
+- [x] End-to-end integration test (`src/__tests__/phase1_5VerticalSlice.test.ts`) passing all 11 steps
+
+
 

@@ -14,6 +14,10 @@ import {
   getAuditEvents,
 } from '../db/database';
 import { CaseStatus } from '../../src/types/clinicalCase';
+import { generateOfflineSOAPNote } from '../../src/utils/offlineLocalEngine';
+import { checkDrugInteractions } from '../../src/utils/drugInteractionChecker';
+import { exportClinicalCaseToFHIR } from '../../src/utils/fhirConverter';
+
 
 export function createClinicianRouter(getDb: () => Database.Database): Router {
   const router = Router();
@@ -158,11 +162,120 @@ export function createClinicianRouter(getDb: () => Database.Database): Router {
         details: { caseId: req.params.id, bundleType: 'collection' },
       });
 
-      res.json({ success: true, caseId: req.params.id, status: 'fhir_exported' });
+      const bundle = exportClinicalCaseToFHIR(clinicalCase, (clinicalCase.consultation as any)?.soapNote);
+
+      res.json({ success: true, caseId: req.params.id, status: 'fhir_exported', bundle });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to record FHIR export', details: err.message });
     }
   });
+
+  // 7. Generate SOAP Note from ClinicalCase (Authenticated)
+  router.post('/cases/:id/generate-soap', requireClinician, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const clinicalCase = getClinicalCase(db, req.params.id);
+      if (!clinicalCase) {
+        return res.status(404).json({ error: `Case ${req.params.id} not found` });
+      }
+
+      const patientInfo = {
+        name: clinicalCase.patient?.name?.value || 'Anonymous',
+        age: clinicalCase.patient?.age?.value || 'Unspecified',
+        sex: clinicalCase.patient?.sex?.value || 'Other',
+        medicalHistory: clinicalCase.intake?.pastMedicalHistory?.value || 'Hypertension',
+        currentMedications: clinicalCase.intake?.currentMedications?.value?.join(', ') || 'Atorvastatin 20mg, Aspirin 75mg',
+        knownAllergies: clinicalCase.intake?.allergies?.value?.join(', ') || 'NKDA',
+      };
+
+      const transcript = req.body.transcript ||
+        `Doctor: Good day. What brings you to the clinic?
+Patient: I have had bad chest pain for the last 2 hours. It feels like a heavy weight and is radiating down my left arm. I am sweating and feel breathless.
+Doctor: Do you have a history of hypertension or heart trouble?
+Patient: Yes, hypertension for 5 years. I take Atorvastatin and Aspirin regularly.`;
+
+      // Generate structured SOAP note using the deterministic engine
+      const soapNote = generateOfflineSOAPNote(patientInfo as any, transcript);
+
+      // Extract prescriptions from intake documents if available
+      const docPrescriptions = clinicalCase.documents?.flatMap(d => d.extractedPrescriptions || []).map(p => ({
+        medication: p.medication,
+        dosage: p.dosage,
+        frequency: p.frequency,
+        instructions: 'Take as directed',
+        duration: p.duration,
+      })) || [];
+
+      if (docPrescriptions.length > 0) {
+        soapNote.plan.prescriptions = [...soapNote.plan.prescriptions, ...docPrescriptions];
+      }
+
+      // Run deterministic safety engine
+      const safetyAlerts = checkDrugInteractions(
+        soapNote.plan.prescriptions,
+        patientInfo.currentMedications,
+        patientInfo.medicalHistory,
+        patientInfo.knownAllergies
+      );
+
+      // Update case consultation state
+      if (!clinicalCase.consultation) {
+        clinicalCase.consultation = {};
+      }
+      (clinicalCase.consultation as any).soapNote = soapNote;
+      (clinicalCase.consultation as any).safetyAlerts = safetyAlerts;
+      clinicalCase.status = 'doctor_reviewing';
+      clinicalCase.updatedAt = new Date().toISOString();
+
+      saveClinicalCase(db, clinicalCase);
+
+      // Persist to soap_notes table
+      const insertSoap = db.prepare(`
+        INSERT INTO soap_notes (id, case_id, subjective, objective, assessment, plan, generated_by, confidence_score, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      insertSoap.run(
+        `soap_${Date.now()}`,
+        clinicalCase.id,
+        JSON.stringify(soapNote.subjective),
+        JSON.stringify(soapNote.objective),
+        JSON.stringify(soapNote.assessment),
+        JSON.stringify(soapNote.plan),
+        'offline_engine',
+        85,
+        new Date().toISOString()
+      );
+
+      recordAuditEvent(db, {
+        caseId: clinicalCase.id,
+        actorType: 'clinician',
+        actorId: req.actorId || 'doctor',
+        action: 'SOAP_GENERATED',
+        details: { engine: 'offline_engine', prescriptionsCount: soapNote.plan.prescriptions.length },
+      });
+
+      res.json({ success: true, caseId: clinicalCase.id, soapNote, safetyAlerts });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to generate SOAP note', details: err.message });
+    }
+  });
+
+  // 8. Get FHIR Bundle (Authenticated)
+  router.get('/cases/:id/fhir', requireClinician, (req: AuthenticatedRequest, res) => {
+    try {
+      const db = getDb();
+      const clinicalCase = getClinicalCase(db, req.params.id);
+      if (!clinicalCase) {
+        return res.status(404).json({ error: `Case ${req.params.id} not found` });
+      }
+
+      const bundle = exportClinicalCaseToFHIR(clinicalCase, (clinicalCase.consultation as any)?.soapNote);
+      res.json({ bundle });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to export FHIR bundle', details: err.message });
+    }
+  });
+
 
   // 7. Audit Events Viewer (Authenticated)
   router.get('/audit-events', requireClinician, (req: AuthenticatedRequest, res) => {

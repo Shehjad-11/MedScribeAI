@@ -107,10 +107,46 @@ export function createKioskRouter(getDb: () => Database.Database): Router {
         });
       }
 
+      // Deterministic Red-Flag Evaluation for Chest Symptoms (Section 12, Phase 1.5)
+      const complaintText = (clinicalCase.intake?.chiefComplaint?.value || '').toLowerCase();
+
+      const responses = JSON.stringify(clinicalCase.intake?.questionResponses || {}).toLowerCase();
+      const combinedIntake = `${complaintText} ${responses}`;
+
+      const isChestPain = combinedIntake.includes('chest pain') || combinedIntake.includes('pressure');
+      const hasBreathlessness = combinedIntake.includes('breathless') || combinedIntake.includes('shortness of breath') || combinedIntake.includes('dyspnea');
+      const hasSweating = combinedIntake.includes('sweat') || combinedIntake.includes('diaphoresis') || combinedIntake.includes('perspiration');
+      const hasRadiation = combinedIntake.includes('arm') || combinedIntake.includes('jaw') || combinedIntake.includes('radiat');
+
+      if (isChestPain && (hasBreathlessness || hasSweating || hasRadiation)) {
+        if (!clinicalCase.intake.redFlags) {
+          clinicalCase.intake.redFlags = [];
+        }
+        if (!clinicalCase.intake.redFlags.some(rf => rf.ruleId === 'RF-CARD-001')) {
+          clinicalCase.intake.redFlags.push({
+            id: `rf_card_${Date.now()}`,
+            ruleId: 'RF-CARD-001',
+            severity: 'EMERGENCY',
+            title: 'High Priority Acute Chest Symptoms (Triage Warning)',
+            description: 'Acute chest pain associated with breathlessness, diaphoresis, or radiation detected. Immediate clinical assessment advised.',
+            triggeredAt: new Date().toISOString(),
+            actionRequired: 'Stat ECG and emergency physician evaluation',
+            acknowledgedByClinician: false,
+            triggeringFacts: ['acute chest pain', hasBreathlessness ? 'breathlessness' : '', hasSweating ? 'sweating' : '', hasRadiation ? 'radiation to arm' : ''].filter(Boolean),
+          });
+        }
+      }
+
       saveClinicalCase(db, clinicalCase);
       updateSessionCase(db, req.kioskSession!.token, clinicalCase.id);
 
-      res.json({ success: true, caseId: clinicalCase.id, status: clinicalCase.status });
+      res.json({
+        success: true,
+        caseId: clinicalCase.id,
+        status: clinicalCase.status,
+        redFlagsCount: clinicalCase.intake.redFlags?.length || 0,
+      });
+
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to save clinical case', details: err.message });
     }
