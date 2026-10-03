@@ -107,6 +107,18 @@
 - [x] Inactivity guardrail timer (3-min threshold with warning modal and auto-wipe)
 - [x] Automated test suite in `src/__tests__/phase2KioskShell.test.ts` (12/12 passing; all 68/68 passing)
 
+---
+
+## Phase 3: Deterministic Clinical Question Engine & Intake Graph (Completed)
+- [x] Config-driven question graph templates for 10 complaints (`src/data/interviewTemplates.ts`)
+- [x] Deterministic question engine with branching and required fields (`src/utils/interviewEngine.ts`)
+- [x] Dual confirmation policy (HIGH-RISK individual confirmation vs LOW-RISK batch summary confirmation)
+- [x] Explicit "Not documented" handling for non-mandatory skipped slots
+- [x] Indic language number normalization (Devanagari numerals ०-९ to 0-9)
+- [x] Clinical specification document for MBBS review (`docs/CLINICAL_SPEC.md` marked PENDING MBBS REVIEW)
+- [x] Automated test suite in `src/__tests__/phase3InterviewEngine.test.ts` (9/9 passing; all 77/77 passing)
+
+
 
 
 

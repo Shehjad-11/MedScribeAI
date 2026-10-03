@@ -436,6 +436,33 @@ Initial deep-dive audit of the existing MedScribe Lite codebase and setup of the
    - Post-change test count: **68 passing across 10 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 3: Deterministic Clinical Question Engine & Intake Graph
+
+### Summary of Implementation & Verification
+1. **Config-Driven Question Graph Templates (`src/data/interviewTemplates.ts`)**:
+   - Implemented structured question graphs for all 10 Tier 1 complaints (Fever, Cough, Chest pain, Abdominal pain, Headache, Breathlessness, Vomiting/diarrhea, Joint pain, Urinary symptoms, Diabetes/hypertension follow-up).
+   - Supported question types: `yes_no`, `single_choice`, `multiple_choice`, `numeric_scale`, `duration`, `free_text`, `confirmation`.
+   - Explicitly tagged each question node with `riskCategory: 'HIGH' | 'LOW'` and `redFlagRisk?: boolean`.
+2. **Deterministic Interview Engine (`src/utils/interviewEngine.ts`)**:
+   - Built session state manager (`startInterview`, `getCurrentQuestion`, `processAnswer`, `confirmHighRiskFact`, `confirmBatchSummary`).
+   - Enforced conditional branching and strict mandatory field validation.
+   - Applied missing facts policy: Non-required unanswered questions explicitly set to `"Not documented"`.
+   - Integrated Indic language normalization: Devanagari numerals (०-९) automatically normalized to standard digits for duration/scale queries.
+3. **Confirmation Policy Implementation**:
+   - **HIGH-RISK facts**: Held in `pendingConfirmationFact` with state `unverified` and require explicit confirmation (`confirmHighRiskFact`).
+   - **LOW-RISK facts**: Automatically appended to `batchConfirmationsPending` and batch-verified at intake conclusion (`confirmBatchSummary`).
+4. **Clinical Specification (`docs/CLINICAL_SPEC.md`)**:
+   - Authored clinical review document detailing all 10 complaint graphs, question keys, types, and red-flag rules.
+   - Prominently stamped top banner with: `STATUS: PENDING MBBS / CLINICIAN REVIEW`.
+5. **Automated Verification (`src/__tests__/phase3InterviewEngine.test.ts`)**:
+   - 9 comprehensive unit tests covering template loading, required fields blocking, "Not documented" handling, high-risk individual confirmation, low-risk batch confirmation, offline slot extraction, and full provenance tagging.
+   - Pre-change test count: 68 passing across 10 suites.
+   - Post-change test count: **77 passing across 11 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 
 

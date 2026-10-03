@@ -98,5 +98,19 @@
   - Zero regressions across existing tests.
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 3: Deterministic Clinical Question Engine & Intake Graph
+- **Scope:**
+  - Build config-driven question templates for all 10 complaints (`src/data/interviewTemplates.ts`) supporting 7 question types, branching, and risk categorization.
+  - Implement deterministic dialogue engine (`src/utils/interviewEngine.ts`) with mandatory field enforcement and "Not documented" handling for skipped optional slots.
+  - Implement dual confirmation policy: individual confirmation for high-risk symptoms, batch summary confirmation for low-risk facts.
+  - Write clinical specification document (`docs/CLINICAL_SPEC.md`) listing all questions, types, and red-flag rules marked PENDING MBBS REVIEW.
+- **Exit Criteria:**
+  - Interview engine test suite passes 100% (`phase3InterviewEngine.test.ts`).
+  - Total test count passes with zero regressions.
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 
 
