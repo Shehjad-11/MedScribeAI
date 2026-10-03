@@ -241,5 +241,21 @@
   - Total test count passes with zero regressions (166/166).
   - Clean TypeScript compilation (`tsc --noEmit`).
 
+---
+
+## Phase 13: Local Deployment, Windows Setup & Synthetic Demo Seeder (Completed)
+- **Scope:**
+  - One-command Windows setup scripts (`setup.bat` and `setup.ps1`).
+  - Seeded synthetic demonstration dataset (`scripts/seedDemoData.ts`) populating 5 clinical cases (ACS Emergency, Dyspnea Emergency, Fever Urgent, Hemoptysis Urgent, AYUSH Normal).
+  - SQLite online backup script (`scripts/backupDb.ts`) creating non-blocking snapshots in `backups/`.
+  - Upgraded health check endpoint (`/api/health`) reporting database status, case counts, and uptime.
+  - Authored deployment and recovery guides (`docs/KIOSK_LAUNCH_NOTES.md`, `docs/FAILURE_RECOVERY.md`, updated `README.md`).
+- **Exit Criteria:**
+  - Database seeder and backup scripts execute cleanly.
+  - Health check responds with `sqlite: connected`.
+  - Total test count passes with zero regressions (166/166).
+  - Clean TypeScript compilation (`tsc --noEmit`).
+
+
 
 

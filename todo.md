@@ -231,5 +231,18 @@
 - [x] Generated formal evaluation report (`docs/EVALUATION_REPORT.md`) with sample sizes and zero invented metrics
 - [x] All 166 tests passing across 19 suites with zero regressions
 
+---
+
+## Phase 13: Local Deployment, Windows Setup & Synthetic Demo Seeder (Completed)
+- [x] Created one-command Windows setup scripts (`setup.bat` and `setup.ps1`)
+- [x] Implemented synthetic demonstration dataset seeder (`scripts/seedDemoData.ts`) populating 5 diverse clinical cases
+- [x] Implemented non-blocking SQLite online backup script (`scripts/backupDb.ts`)
+- [x] Enhanced health check endpoint (`GET /api/health`) with SQLite connection status and metrics
+- [x] Created kiosk hardware launch notes (`docs/KIOSK_LAUNCH_NOTES.md`)
+- [x] Created failure recovery guide (`docs/FAILURE_RECOVERY.md`)
+- [x] Updated `README.md` with step-by-step local execution guide
+- [x] Updated `.env.example` with documented environment keys
+
+
 
 

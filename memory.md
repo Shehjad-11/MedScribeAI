@@ -718,5 +718,35 @@ pm run lint (	sc --noEmit): **0 errors**.
    - Total test suites passing: **166/166 passing across 19 suites (0 regressions)**.
    - `npm run lint` (`tsc --noEmit`): **0 errors**.
 
+---
+
+## Session Log: 2026-10-03 — Phase 13: Local Deployment, Windows Setup & Synthetic Demo Seeder
+
+### Summary of Implementation & Verification
+1. **One-Command Windows Setup (`setup.bat` & `setup.ps1`)**:
+   - Created native Windows Command Prompt batch file (`setup.bat`) and PowerShell setup script (`setup.ps1`).
+   - Automatically verifies Node.js (>= 18), creates `.env` from `.env.example`, executes `npm install`, runs `npm run build`, and seeds synthetic demonstration cases into SQLite.
+2. **Synthetic Demonstration Dataset Seeder (`scripts/seedDemoData.ts`)**:
+   - Populated SQLite database with 5 realistic synthetic clinical cases:
+     - Case 1: STAT / Emergency Priority 1 acute chest pain (52-yr male Ramesh Patil, left arm/jaw radiation, diaphoresis, ACS red-flag `RF-CARD-001`, encrypted Amlodipine + Atorvastatin prescription).
+     - Case 2: Emergency Priority 1 acute respiratory distress (68-yr female Sunita Kulkarni, resting dyspnea, cyanosis `RF-RESP-001`).
+     - Case 3: Urgent Priority 2 prolonged pyrexia (62-yr male Suresh Joshi, 8 days fever `RF-FEV-001`).
+     - Case 4: Urgent Priority 2 productive cough with hemoptysis (34-yr female Meera Deshmukh `RF-RESP-002`).
+     - Case 5: Normal Priority 4 routine checkup with full AYUSH intake (42-yr male Anand Kapse, Pitta-Kapha Dvandvaja Prakriti, Tikshna Agni, `PENDING BAMS REVIEW`).
+3. **SQLite Online Backup Utility (`scripts/backupDb.ts`)**:
+   - Implemented online snapshot backup using SQLite's non-blocking backup API to `backups/medscribe_backup_<timestamp>.db`.
+4. **Enhanced System Health Check Endpoint (`server.ts`)**:
+   - Upgraded `GET /api/health` to report SQLite connection status, active clinical cases count, local-only mode flag, Gemini configuration status, uptime, and application version.
+5. **Deployment & Operational Runbooks**:
+   - `docs/KIOSK_LAUNCH_NOTES.md`: Touchscreen hardware recommendations, Chrome/Edge fullscreen kiosk mode flags, 3-minute inactivity auto-wipe, and disinfection SOP.
+   - `docs/FAILURE_RECOVERY.md`: Practical recovery procedures for port 3000 conflicts, SQLite WAL lock clearing, API quota fallback, and database backup restoration.
+   - `README.md`: Updated quick start and one-command Windows setup guide.
+6. **Automated Verification**:
+   - `npm run db:seed`: Seeded 5 cases successfully.
+   - `npm run db:backup`: Created verified 132 KB snapshot.
+   - Total test count: **166/166 passing across 19 suites (0 regressions)**.
+   - `npm run lint` (`tsc --noEmit`): **0 errors**.
+
+
 
 

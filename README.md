@@ -16,13 +16,20 @@
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start & Local Deployment
 
 ### Prerequisites
 - Node.js (v18+)
 - npm
 
-### Installation & Setup
+### Option A: One-Command Windows Setup
+Double-click `setup.bat` or run in PowerShell:
+```powershell
+.\setup.ps1
+```
+This automatically verifies Node.js, creates `.env` from `.env.example`, installs dependencies, builds the bundle, and seeds the synthetic demo cases.
+
+### Option B: Manual Step-by-Step Setup
 
 1. **Clone repository and install dependencies**:
    ```bash
@@ -30,28 +37,43 @@
    ```
 
 2. **Configure environment variables**:
-   Create a `.env` file in the project root (see `.env.example`):
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   PORT=3000
+   ```bash
+   cp .env.example .env
+   # Edit .env and insert your GEMINI_API_KEY if testing cloud features
    ```
 
-3. **Run the development server**:
+3. **Seed Synthetic Demonstration Dataset**:
+   ```bash
+   npm run db:seed
+   ```
+
+4. **Run the development server**:
    ```bash
    npm run dev
    ```
    Open `http://localhost:3000` in your browser.
 
-4. **Run Unit & Component Tests**:
+5. **Run the Full Test Suite**:
    ```bash
    npm test
    ```
 
-5. **Build for Production**:
+6. **Run System Evaluation Harness**:
+   ```bash
+   npm run eval
+   ```
+
+7. **Production Mode (Bundled)**:
    ```bash
    npm run build
    npm start
    ```
+
+### Default Clinician Login (Demo Account)
+- **Username**: `doctor`
+- **Password**: `medscribe2026`
+*(Loaded strictly via environment variables `CLINICIAN_USER` and `CLINICIAN_PASS`)*
+
 
 ---
 

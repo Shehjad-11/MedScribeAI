@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
-import { getDatabase } from './server/db/database';
+import { getDatabase, listClinicalCases } from './server/db/database';
 import { createKioskRouter } from './server/routes/kioskRoutes';
 import { createClinicianRouter } from './server/routes/clinicianRoutes';
 import { securityHeadersMiddleware } from './server/security/securityHeaders';
@@ -57,9 +57,31 @@ function getGeminiClient(): GoogleGenAI {
 }
 
 // Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', app: 'MedScribe Lite' });
+app.get('/api/health', (_req, res) => {
+  try {
+    const db = getDb();
+    const cases = listClinicalCases(db);
+    res.json({
+      status: 'ok',
+      app: 'MedScribeAI',
+      version: '1.0.0',
+      sqlite: 'connected',
+      activeCasesCount: cases.length,
+      localOnlyMode: process.env.LOCAL_ONLY_MODE === 'true',
+      geminiConfigured: !!process.env.GEMINI_API_KEY,
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 'error',
+      app: 'MedScribeAI',
+      sqlite: 'disconnected',
+      error: err.message,
+    });
+  }
 });
+
 
 
 // SOAP Note Generation API endpoint
